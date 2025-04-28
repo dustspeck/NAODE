@@ -8,12 +8,13 @@ import {
   TouchableOpacity,
   Text,
 } from 'react-native';
-
-const {OverlayModule} = NativeModules;
+import {Slider} from '@miblanchard/react-native-slider';
+import {useOverlay} from './app/services/mmkv';
 
 function App(): React.JSX.Element {
+  const {OverlayModule} = NativeModules;
   const [hasPermission, setHasPermission] = useState(false);
-  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [overlay, setOverlay] = useOverlay();
 
   const checkPermission = async () => {
     if (Platform.OS === 'android') {
@@ -25,13 +26,6 @@ function App(): React.JSX.Element {
   const requestPermission = () => {
     if (Platform.OS === 'android') {
       OverlayModule.requestAccessibilityPermission();
-    }
-  };
-
-  const toggleOverlay = () => {
-    if (Platform.OS === 'android') {
-      OverlayModule.toggleOverlay();
-      setIsOverlayVisible(!isOverlayVisible);
     }
   };
 
@@ -54,11 +48,18 @@ function App(): React.JSX.Element {
                 alignItems: 'center',
               }}>
               <Text style={{color: '#fff', fontSize: 16}}>
-                Grant Overlay Permission
+                Grant Accessibility Permission
               </Text>
             </TouchableOpacity>
           ) : (
-            <View />
+            <View>
+              <Text>Overlay</Text>
+              <Text style={{color: '#fff'}}>Size: {overlay.size}</Text>
+              <Slider
+                value={overlay.size}
+                onValueChange={value => setOverlay({size: value[0]})}
+              />
+            </View>
           )}
         </View>
       </ScrollView>
