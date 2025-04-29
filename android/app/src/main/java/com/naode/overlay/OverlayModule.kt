@@ -28,6 +28,11 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
         reactApplicationContext.startActivity(intent)
     }
 
+    @ReactMethod
+    fun updateOverlay(promise: Promise) {
+        OverlayAccessibilityService().updateOverlaySize()
+    }
+
     private fun isAccessibilityServiceEnabled(): Boolean {
         val accessibilityEnabled = Settings.Secure.getInt(
             reactApplicationContext.contentResolver,

@@ -12,6 +12,9 @@ import android.widget.ImageView
 import android.util.Log
 import android.util.DisplayMetrics
 import com.naode.R
+import com.tencent.mmkv.MMKV
+import org.json.JSONObject
+import androidx.core.net.toUri
 
 class OverlayAccessibilityService : AccessibilityService() {
     private var windowManager: WindowManager? = null
@@ -20,7 +23,9 @@ class OverlayAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "OverlayAccessibilityService"
-        private const val OVERLAY_SIZE = 400
+        private var OVERLAY_SIZE = 400
+        private var OVERLAY_IMAGE:String? = null
+        private lateinit var mmkv: MMKV
     }
 
     private val screenStateReceiver = object : BroadcastReceiver() {
@@ -51,6 +56,18 @@ class OverlayAccessibilityService : AccessibilityService() {
             addAction(Intent.ACTION_SCREEN_ON)
         }
         registerReceiver(screenStateReceiver, filter)
+        MMKV.initialize(this)
+        mmkv = MMKV.mmkvWithID("mmkv_id", MMKV.MULTI_PROCESS_MODE)
+    }
+
+    fun updateOverlaySize() {
+        val overlays = mmkv.getString("OVERLAY", "{}")
+        val overlaysJSON = JSONObject(overlays)
+        val size = overlaysJSON.getInt("size")
+        val image = overlaysJSON.getString("customImagePath")
+        Log.d(TAG, "Size: $size, Image: $image")
+        OVERLAY_SIZE = size
+        OVERLAY_IMAGE = image
     }
 
     private fun showOverlay() {
@@ -76,7 +93,12 @@ class OverlayAccessibilityService : AccessibilityService() {
             val y = (screenHeight - OVERLAY_SIZE) / 2
 
             overlayView = ImageView(this).apply {
-                setImageResource(R.drawable.overlay_image)
+                if (OVERLAY_IMAGE != null) {
+                    setImageURI(OVERLAY_IMAGE!!.toUri())
+                }else{
+                    setImageResource(R.drawable.overlay_image)
+                }
+
                 scaleType = ImageView.ScaleType.FIT_CENTER
             }
 

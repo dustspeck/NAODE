@@ -1,4 +1,4 @@
 export interface IOverlay {
   size: number;
-  customImagePath?: string;
+  customImagePath: string | null;
 }

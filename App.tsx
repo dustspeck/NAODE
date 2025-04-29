@@ -70,6 +70,9 @@ function App(): React.JSX.Element {
               <Text style={{color: '#fff'}}>Size: {overlay.size}</Text>
               <Slider
                 value={overlay.size}
+                minimumValue={100}
+                maximumValue={600}
+                step={10}
                 onValueChange={value => setOverlay({size: value[0]})}
               />
               <TouchableOpacity
@@ -97,6 +100,20 @@ function App(): React.JSX.Element {
                   }}
                 />
               )}
+              <TouchableOpacity
+                onPress={() => OverlayModule.updateOverlay()}
+                style={{
+                  backgroundColor: '#007AFF',
+                  padding: 15,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  marginTop: 20,
+                }}>
+                <Text style={{color: '#fff', fontSize: 16}}>
+                  Update Overlay
+                </Text>
+              </TouchableOpacity>
+              
             </View>
           )}
         </View>
