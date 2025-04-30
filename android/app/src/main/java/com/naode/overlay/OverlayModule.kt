@@ -30,7 +30,15 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
 
     @ReactMethod
     fun updateOverlay(promise: Promise) {
-        OverlayAccessibilityService().updateOverlaySize()
+        try {
+            // Get the service instance and call showOverlays
+            val service = OverlayAccessibilityService()
+            service.showOverlays()
+            promise.resolve(true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating overlay", e)
+            promise.reject("ERROR", e.message)
+        }
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {

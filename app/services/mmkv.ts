@@ -1,24 +1,70 @@
-import {
-  MMKVLoader,
-  useMMKVStorage,
-  ProcessingModes,
-} from 'react-native-mmkv-storage';
-import {IOverlay} from '../models/OverlayModel';
-import {defaultOverlayAppearance} from '../utils/storage';
+import {MMKVLoader, ProcessingModes} from 'react-native-mmkv-storage';
+import {useMMKVStorage} from 'react-native-mmkv-storage';
+import {IOverlay, IOverlayStore} from '../models/OverlayModel';
 
-const MMKV = new MMKVLoader()
-  .setProcessingMode(ProcessingModes.MULTI_PROCESS)
-  .withInstanceID('mmkv_id')
-  .initialize();
+const MMKV = new MMKVLoader().withInstanceID('mmkv_id').setProcessingMode(ProcessingModes.MULTI_PROCESS).initialize();
 
-export const useOverlay = () => {
-  const [storedValue, setStoredValue] = useMMKVStorage<IOverlay>(
-    'OVERLAY',
-    MMKV,
-    defaultOverlayAppearance,
+const defaultOverlayStore: IOverlayStore = {
+  overlays: [],
+};
+
+// Simple ID generation function
+const generateId = () => {
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
   );
-  function setValues(settings: Partial<IOverlay>) {
-    setStoredValue(prevSetting => ({...prevSetting, ...settings}));
-  }
-  return [storedValue, setValues] as const;
+};
+
+export const useOverlayStore = () => {
+  const [store, setStore] = useMMKVStorage<IOverlayStore>(
+    'OVERLAY_STORE',
+    MMKV,
+    defaultOverlayStore,
+  );
+
+  const addOverlay = () => {
+    const newOverlay: IOverlay = {
+      id: generateId(),
+      size: 400,
+    };
+    const newOverlays = [...store.overlays, newOverlay];
+    const newStore = {...store, overlays: newOverlays, activeOverlayId: newOverlay.id};
+    console.log({newStore})
+    setStore(newStore);
+  };
+
+  const updateOverlay = (id: string, updates: Partial<IOverlay>) => {
+    const newOverlays = store.overlays.map(overlay =>
+      overlay.id === id ? {...overlay, ...updates} : overlay,
+    );
+    const newStore = {...store, overlays: newOverlays, activeOverlayId: id};
+    console.log({newStore})
+    setStore(newStore);
+  };
+
+  const removeOverlay = (id: string) => {
+    const newOverlays = store.overlays.filter(overlay => overlay.id !== id);
+    setStore({
+      ...store,
+      overlays: newOverlays,
+      activeOverlayId:
+        store.activeOverlayId === id ? undefined : store.activeOverlayId,
+    });
+  };
+
+  const setActiveOverlay = (id: string) => {
+    setStore({
+      ...store,
+      activeOverlayId: id,
+    });
+  };
+
+  return {
+    store,
+    addOverlay,
+    updateOverlay,
+    removeOverlay,
+    setActiveOverlay,
+  };
 };

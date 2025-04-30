@@ -11,21 +11,24 @@ import android.view.WindowManager
 import android.widget.ImageView
 import android.util.Log
 import android.util.DisplayMetrics
+import androidx.core.net.toUri
 import com.naode.R
 import com.tencent.mmkv.MMKV
+import org.json.JSONArray
 import org.json.JSONObject
-import androidx.core.net.toUri
 
 class OverlayAccessibilityService : AccessibilityService() {
     private var windowManager: WindowManager? = null
-    private var overlayView: ImageView? = null
+    private val overlayViews = mutableMapOf<String, ImageView>()
     private var isScreenOff = false
+    // private lateinit var mmkv: MMKV
 
     companion object {
         private const val TAG = "OverlayAccessibilityService"
-        private var OVERLAY_SIZE = 400
-        private var OVERLAY_IMAGE:String? = null
         private lateinit var mmkv: MMKV
+        private const val OVERLAY_SIZE = 400
+        private const val MMKV_ID = "mmkv_id"
+        private const val OVERLAY_STORE_KEY = "OVERLAY_STORE"
     }
 
     private val screenStateReceiver = object : BroadcastReceiver() {
@@ -34,12 +37,12 @@ class OverlayAccessibilityService : AccessibilityService() {
                 Intent.ACTION_SCREEN_OFF -> {
                     Log.d(TAG, "Screen turned off")
                     isScreenOff = true
-                    showOverlay()
+                    showOverlays()
                 }
                 Intent.ACTION_SCREEN_ON -> {
                     Log.d(TAG, "Screen turned on")
                     isScreenOff = false
-                    removeOverlay()
+                    removeOverlays()
                 }
             }
         }
@@ -50,6 +53,8 @@ class OverlayAccessibilityService : AccessibilityService() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         Log.d(TAG, "Service connected")
         
+        // Read and log overlay values
+        // readAndLogOverlayValues()
         // Register screen state receiver
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
@@ -57,80 +62,125 @@ class OverlayAccessibilityService : AccessibilityService() {
         }
         registerReceiver(screenStateReceiver, filter)
         MMKV.initialize(this)
-        mmkv = MMKV.mmkvWithID("mmkv_id", MMKV.MULTI_PROCESS_MODE)
+        mmkv = MMKV.mmkvWithID(MMKV_ID, MMKV.MULTI_PROCESS_MODE)
     }
 
-    fun updateOverlaySize() {
-        val overlays = mmkv.getString("OVERLAY", "{}")
-        val overlaysJSON = JSONObject(overlays)
-        val size = overlaysJSON.getInt("size")
-        val image = overlaysJSON.getString("customImagePath")
-        Log.d(TAG, "Size: $size, Image: $image")
-        OVERLAY_SIZE = size
-        OVERLAY_IMAGE = image
+    private fun readAndLogOverlayValues(): List<OverlayConfig> {
+//        overlays
+//        :
+//        Array(1)
+//        0
+//        :
+//        customImagePath
+//        :
+//        "file:///data/user/0/com.naode/cache/rn_image_picker_lib_temp_6e1b5074-bc30-4575-afa2-41a5fadc3965.png"
+//        id
+//        :
+//        "otjd909cofaq3no4w499r"
+//        size
+//        :
+//        400
+        val overlayStoreJson = mmkv.getString(OVERLAY_STORE_KEY, "{\"overlays\":[{\"id\":\"otjd909cofaq3no4w499r\",\"size\": 400, \"customImagePath:\"file:///data/user/0/com.naode/cache/rn_image_picker_lib_temp_6e1b5074-bc30-4575-afa2-41a5fadc3965.png\"\"}]}")
+        Log.d(TAG, "Raw MMKV value: $overlayStoreJson")
+        
+        return try {
+            val jsonObject = JSONObject(overlayStoreJson)
+            val overlaysArray = jsonObject.getJSONArray("overlays")
+            val configs = mutableListOf<OverlayConfig>()
+            
+            for (i in 0 until overlaysArray.length()) {
+                val overlayJson = overlaysArray.getJSONObject(i)
+                val id = overlayJson.getString("id")
+                val size = overlayJson.optInt("size", OVERLAY_SIZE)
+                val customImagePath = overlayJson.optString("customImagePath", "null")
+                
+                Log.d(TAG, "Parsed overlay values for $id:")
+                Log.d(TAG, "Size: $size")
+                Log.d(TAG, "Custom Image Path: $customImagePath")
+                
+                configs.add(OverlayConfig(id, size, customImagePath))
+            }
+            
+            configs
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing overlay values: ${e.message}")
+            Log.e(TAG, "Error parsing overlay values", e)
+            emptyList()
+        }
     }
 
-    private fun showOverlay() {
+    fun showOverlays() {
         if (!isScreenOff) {
-            Log.d(TAG, "Screen is on, not showing overlay")
+            Log.d(TAG, "Screen is on, not showing overlays")
             return
         }
 
-        if (overlayView != null) {
-            Log.d(TAG, "Overlay already exists, removing first")
-            removeOverlay()
-        }
+        removeOverlays()
 
         try {
+            val configs = readAndLogOverlayValues()
+            
             // Get screen dimensions
             val displayMetrics = DisplayMetrics()
             windowManager?.defaultDisplay?.getMetrics(displayMetrics)
             val screenWidth = displayMetrics.widthPixels
             val screenHeight = displayMetrics.heightPixels
 
-            // Calculate center position
-            val x = (screenWidth - OVERLAY_SIZE) / 2
-            val y = (screenHeight - OVERLAY_SIZE) / 2
+            // Calculate grid layout
+            val numOverlays = configs.size
+//            val cols = if (numOverlays <= 2) numOverlays else 2
+            val cols = 2
+            val rows = (numOverlays + cols - 1) / cols
 
-            overlayView = ImageView(this).apply {
-                if (OVERLAY_IMAGE != null) {
-                    setImageURI(OVERLAY_IMAGE!!.toUri())
-                }else{
-                    setImageResource(R.drawable.overlay_image)
+            configs.forEachIndexed { index, config ->
+                val row = index / cols
+                val col = index % cols
+                
+                // Calculate position
+                val x = (screenWidth / cols) * col + (screenWidth / cols - config.size) / 2
+                val y = (screenHeight / rows) * row + (screenHeight / rows - config.size) / 2
+
+                val overlayView = ImageView(this).apply {
+                    if (config.customImagePath.startsWith("file:")) {
+                        Log.d(TAG, "Loading custom image from path: ${config.customImagePath}")
+                        setImageURI(config.customImagePath.toUri())
+                    } else {
+                        setImageResource(R.drawable.overlay_image)
+                    }
+                    scaleType = ImageView.ScaleType.FIT_CENTER
                 }
 
-                scaleType = ImageView.ScaleType.FIT_CENTER
-            }
+                val params = WindowManager.LayoutParams(
+                    config.size,
+                    config.size,
+                    WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                    PixelFormat.TRANSLUCENT
+                ).apply {
+                    gravity = Gravity.TOP or Gravity.START
+                    this.x = x
+                    this.y = y
+                }
 
-            val params = WindowManager.LayoutParams(
-                OVERLAY_SIZE,
-                OVERLAY_SIZE,
-                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-                PixelFormat.TRANSLUCENT
-            ).apply {
-                gravity = Gravity.TOP or Gravity.START
-                this.x = x
-                this.y = y
+                windowManager?.addView(overlayView, params)
+                overlayViews[config.id] = overlayView
+                Log.d(TAG, "Overlay ${config.id} shown at position ($x, $y) with size ${config.size}")
             }
-
-            windowManager?.addView(overlayView, params)
-            Log.d(TAG, "Overlay shown successfully at position ($x, $y)")
         } catch (e: Exception) {
-            Log.e(TAG, "Error showing overlay", e)
-            overlayView = null
+            Log.e(TAG, "Error showing overlays", e)
+            removeOverlays()
         }
     }
 
-    private fun removeOverlay() {
+    private fun removeOverlays() {
         try {
-            if (overlayView != null) {
-                windowManager?.removeView(overlayView)
-                overlayView = null
-                Log.d(TAG, "Overlay removed successfully")
+            overlayViews.forEach { (id, view) ->
+                windowManager?.removeView(view)
+                Log.d(TAG, "Overlay $id removed successfully")
             }
+            overlayViews.clear()
         } catch (e: Exception) {
-            Log.e(TAG, "Error removing overlay", e)
+            Log.e(TAG, "Error removing overlays", e)
         }
     }
 
@@ -149,6 +199,12 @@ class OverlayAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             Log.e(TAG, "Error unregistering receiver", e)
         }
-        removeOverlay()
+        removeOverlays()
     }
+
+    data class OverlayConfig(
+        val id: String,
+        val size: Int,
+        val customImagePath: String
+    )
 } 
