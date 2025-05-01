@@ -1,155 +1,79 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
-  ScrollView,
-  StatusBar,
-  View,
-  NativeModules,
+  SafeAreaView,
   TouchableOpacity,
-  Text,
-  Image,
+  useWindowDimensions,
+  View,
+  StatusBar,
+  Animated,
 } from 'react-native';
-import {Slider} from '@miblanchard/react-native-slider';
-import {useOverlayStore} from './app/services/mmkv';
-import {launchImageLibrary} from 'react-native-image-picker';
-import {IOverlay} from './app/models/OverlayModel';
+import Label from './app/components/atoms/Label';
+import StatusBarView from './app/components/atoms/StatusBarView';
+import SystemNavigationBar from 'react-native-system-navigation-bar';
+import EditorHeader from './app/components/molecules/Editor/Header';
+import {EDIT_CONTROLS_RATIO, EDIT_WINDOW_RATIO} from './app/constants/ui';
+import RightPanel from './app/components/molecules/Editor/RightPanel';
+import LeftPanel from './app/components/molecules/Editor/LeftPanel';
+import BottomPanel from './app/components/molecules/Editor/BottomPanel';
+import Editor from './app/components/molecules/Editor/Editor';
 
 function App(): React.JSX.Element {
-  const {OverlayModule} = NativeModules;
-  const [hasPermission, setHasPermission] = useState(false);
-  const {store, addOverlay, updateOverlay, removeOverlay, setActiveOverlay} = useOverlayStore();
+  const {width, height} = useWindowDimensions();
 
-  const checkPermission = async () => {
-    const permission = await OverlayModule.checkAccessibilityPermission();
-    setHasPermission(permission);
-  };
-
-  const requestPermission = () => {
-    OverlayModule.requestAccessibilityPermission();
-  };
-
-  const pickImage = (overlayId: string) => {
-    launchImageLibrary({
-      mediaType: 'photo',
-      quality: 1,
-    }, (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else if (response.assets && response.assets[0].uri) {
-        const imagePath = response.assets[0].uri;
-        updateOverlay(overlayId, {customImagePath: imagePath});
-      }
-    });
-  };
+  const [isZoomed, setIsZoomed] = useState(false);
+  const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
 
   useEffect(() => {
-    checkPermission();
-  }, []);
-
-  const renderOverlayControls = (overlay: IOverlay) => (
-    <View key={overlay.id} style={{marginBottom: 20, padding: 10, backgroundColor: '#1C1C1E', borderRadius: 8}}>
-      <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10}}>
-        <Text style={{color: '#fff', fontSize: 16}}>Overlay {overlay.id.slice(0, 4)}</Text>
-        <TouchableOpacity
-          onPress={() => removeOverlay(overlay.id)}
-          style={{
-            backgroundColor: '#FF3B30',
-            padding: 8,
-            borderRadius: 4,
-          }}>
-          <Text style={{color: '#fff'}}>Remove</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={{color: '#fff'}}>Size: {overlay.size}</Text>
-      <Slider
-        value={overlay.size}
-        minimumValue={100}
-        maximumValue={600}
-        step={10}
-        onValueChange={value => updateOverlay(overlay.id, {size: value[0]})}
-      />
-      <TouchableOpacity
-        onPress={() => pickImage(overlay.id)}
-        style={{
-          backgroundColor: '#007AFF',
-          padding: 15,
-          borderRadius: 8,
-          alignItems: 'center',
-          marginTop: 10,
-        }}>
-        <Text style={{color: '#fff', fontSize: 16}}>
-          {overlay.customImagePath ? 'Change Image' : 'Select Image'}
-        </Text>
-      </TouchableOpacity>
-      {overlay.customImagePath && (
-        <Image
-          source={{uri: overlay.customImagePath}}
-          style={{
-            width: 200,
-            height: 200,
-            alignSelf: 'center',
-            marginTop: 10,
-            borderRadius: 8,
-          }}
-        />
-      )}
-    </View>
-  );
+    if (isZoomed) {
+      SystemNavigationBar.immersive();
+      StatusBar.setHidden(true);
+      Animated.spring(animatedSize, {
+        toValue: 1,
+        useNativeDriver: false,
+        friction: 8,
+        tension: 80,
+      }).start();
+    } else {
+      SystemNavigationBar.navigationShow();
+      StatusBar.setHidden(false);
+      Animated.spring(animatedSize, {
+        toValue: EDIT_WINDOW_RATIO,
+        useNativeDriver: false,
+        friction: 8,
+        tension: 80,
+      }).start();
+    }
+  }, [isZoomed]);
 
   return (
-    <View style={{backgroundColor: '#000', flex: 1}}>
-      <StatusBar barStyle={'light-content'} backgroundColor={'#000'} />
-      <ScrollView style={{backgroundColor: '#000'}}>
-        <View style={{marginTop: 100, padding: 20}}>
-          {!hasPermission ? (
-            <TouchableOpacity
-              onPress={requestPermission}
-              style={{
-                backgroundColor: '#007AFF',
-                padding: 15,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}>
-              <Text style={{color: '#fff', fontSize: 16}}>
-                Grant Accessibility Permission
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <View>
-              <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
-                <Text style={{color: '#fff', fontSize: 20}}>Overlays</Text>
-                <TouchableOpacity
-                  onPress={addOverlay}
-                  style={{
-                    backgroundColor: '#34C759',
-                    padding: 10,
-                    borderRadius: 8,
-                  }}>
-                  <Text style={{color: '#fff'}}>Add Overlay</Text>
-                </TouchableOpacity>
-              </View>
-              {store.overlays.map(renderOverlayControls)}
-              {store.overlays.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => OverlayModule.updateOverlay()}
-                  style={{
-                    backgroundColor: '#007AFF',
-                    padding: 15,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                    marginTop: 20,
-                  }}>
-                  <Text style={{color: '#fff', fontSize: 16}}>
-                    Update Overlays
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+    <SafeAreaView style={{flex: 1}}>
+      <StatusBar barStyle={'light-content'} />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'black',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        {!isZoomed && (
+          <>
+            <StatusBarView color="black" />
+            <EditorHeader />
+          </>
+        )}
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          {!isZoomed && <LeftPanel animatedSize={animatedSize} />}
+          <Editor
+            animatedSize={animatedSize}
+            isZoomed={isZoomed}
+            setIsZoomed={setIsZoomed}
+          />
+          {!isZoomed && <RightPanel animatedSize={animatedSize} />}
         </View>
-      </ScrollView>
-    </View>
+
+        {!isZoomed && <BottomPanel />}
+      </View>
+    </SafeAreaView>
   );
 }
 

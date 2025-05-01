@@ -1,0 +1,2 @@
+export const EDIT_WINDOW_RATIO = 0.8;
+export const EDIT_CONTROLS_RATIO = (1 - EDIT_WINDOW_RATIO) / 2;
