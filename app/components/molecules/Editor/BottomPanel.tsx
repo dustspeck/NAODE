@@ -1,8 +1,24 @@
+import React from 'react';
 import {View, useWindowDimensions} from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
-import Icon from 'react-native-vector-icons/Ionicons';
+import ControlIcon from '../../atoms/ControlIcon';
+import { useEditorContext } from '../../../context/EditorContext';
 
-const BottomPanel: React.FC<{}> = () => {
+interface ImageData {
+  id: string;
+  uri: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+}
+
+const BottomPanel: React.FC = () => {
+  const {
+    images,
+    selectedImageId,
+    isSelected,
+    setSelectedImageId,
+    setIsSelected
+  } = useEditorContext();
   const {width, height} = useWindowDimensions();
   return (
     <View
@@ -10,7 +26,12 @@ const BottomPanel: React.FC<{}> = () => {
         height: height * EDIT_CONTROLS_RATIO,
         width: width,
       }}>
-      <Icon name="add-circle" size={40} color="white" />
+      {isSelected && (
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <ControlIcon name="link" onPress={() => {}} />
+          <ControlIcon name="scan" onPress={() => {}} />
+        </View>
+      )}
     </View>
   );
 };

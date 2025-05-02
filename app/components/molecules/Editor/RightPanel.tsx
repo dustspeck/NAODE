@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Animated,
   TouchableOpacity,
@@ -6,11 +7,24 @@ import {
 } from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { useEditorContext } from '../../../context/EditorContext';
 
-const RightPanel: React.FC<{animatedSize: Animated.Value}> = ({
-  animatedSize,
-}) => {
-  const {width, height} = useWindowDimensions();
+interface ImageData {
+  id: string;
+  uri: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+}
+
+interface RightPanelProps {
+  animatedSize: Animated.Value;
+}
+
+const RightPanel: React.FC<RightPanelProps> = ({ animatedSize }) => {
+  const { width, height } = useWindowDimensions();
+  const { handleAddImage, handleUpdateImage } = useEditorContext();
+
   return (
     <View>
       <Animated.View
@@ -22,13 +36,26 @@ const RightPanel: React.FC<{animatedSize: Animated.Value}> = ({
           }),
           alignItems: 'center',
         }}>
-        <TouchableOpacity onPress={() => {}} activeOpacity={0.8}>
+        <TouchableOpacity onPress={() => {
+          launchImageLibrary({
+            mediaType: 'photo',
+            quality: 1,
+          }, (response) => {
+            if (response.didCancel) {
+              return;
+            }
+            if (response.assets && response.assets[0]?.uri) {
+              handleAddImage(response.assets[0].uri);
+            }
+          });
+        }} activeOpacity={0.8}>
           <Icon
             name="add-circle"
             size={width * EDIT_CONTROLS_RATIO * 0.8}
             color="white"
           />
         </TouchableOpacity>
+            
       </Animated.View>
     </View>
   );

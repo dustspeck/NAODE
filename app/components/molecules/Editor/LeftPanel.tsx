@@ -5,10 +5,18 @@ import {
   View,
 } from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
-import Icon from 'react-native-vector-icons/Ionicons';
+import ControlIcon from '../../atoms/ControlIcon';
 
-const LeftPanel: React.FC<{animatedSize: Animated.Value}> = ({
+interface LeftPanelProps {
+  animatedSize: Animated.Value;
+  isZoomed: boolean;
+  setIsZoomed: (isZoomed: boolean) => void;
+}
+
+const LeftPanel: React.FC<LeftPanelProps> = ({
   animatedSize,
+  isZoomed,
+  setIsZoomed,
 }) => {
   const {width, height} = useWindowDimensions();
   return (
@@ -22,13 +30,7 @@ const LeftPanel: React.FC<{animatedSize: Animated.Value}> = ({
           }),
           alignItems: 'center',
         }}>
-        <TouchableOpacity onPress={() => {}} activeOpacity={0.8}>
-          <Icon
-            name="add-circle"
-            size={width * EDIT_CONTROLS_RATIO * 0.8}
-            color="white"
-          />
-        </TouchableOpacity>
+        <ControlIcon name="expand" onPress={() => setIsZoomed(!isZoomed)} />
       </Animated.View>
     </View>
   );
