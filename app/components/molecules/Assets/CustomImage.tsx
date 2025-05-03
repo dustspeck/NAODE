@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useMemo, useCallback} from 'react';
 import {
   Animated,
   PanResponder,
@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   TouchableOpacity,
   Alert,
+  ViewStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {ImageData} from '../../../types';
@@ -32,11 +33,15 @@ const CustomImage: React.FC<CustomImageProps> = ({
   onUpdate,
   onDelete,
 }) => {
-  const {width, height} = useWindowDimensions();
+  const {width} = useWindowDimensions();
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Get the actual image dimensions when it loads
     Image.getSize(image.uri, (imgWidth, imgHeight) => {
+      if (!isMounted) return;
+      
       // Calculate the aspect ratio
       const aspectRatio = imgWidth / imgHeight;
       
@@ -48,9 +53,13 @@ const CustomImage: React.FC<CustomImageProps> = ({
         size: {width: initialWidth, height: initialHeight},
       });
     });
-  }, [image.uri]);
 
-  const handleDelete = () => {
+    return () => {
+      isMounted = false;
+    };
+  }, [image.uri, image.id, width, onUpdate]);
+
+  const handleDelete = useCallback(() => {
     Alert.alert('Delete Image', 'Are you sure you want to delete this image?', [
       {
         text: 'Cancel',
@@ -62,9 +71,9 @@ const CustomImage: React.FC<CustomImageProps> = ({
         onPress: () => onDelete(image.id),
       },
     ]);
-  };
+  }, [image.id, onDelete]);
 
-  const createPanResponder = () => {
+  const panResponder = useMemo(() => {
     if (!panValues[image.id]) {
       panValues[image.id] = new Animated.ValueXY();
     }
@@ -90,9 +99,9 @@ const CustomImage: React.FC<CustomImageProps> = ({
         });
       },
     });
-  };
+  }, [image.id, panValues, onSelect, onUpdate]);
 
-  const createResizeResponder = () => {
+  const resizeResponder = useMemo(() => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gestureState) => {
@@ -108,49 +117,46 @@ const CustomImage: React.FC<CustomImageProps> = ({
         });
       },
     });
-  };
+  }, [image.id, image.size.width, image.size.height, onUpdate]);
 
-  const panResponder = createPanResponder();
-  const resizeResponder = createResizeResponder();
+  const imageStyle = useMemo<Animated.WithAnimatedObject<ViewStyle>>(() => ({
+    transform: [
+      {
+        translateX: Animated.multiply(
+          animatedSize,
+          panValues[image.id]?.x || 0,
+        ),
+      },
+      {
+        translateY: Animated.multiply(
+          animatedSize,
+          panValues[image.id]?.y || 0,
+        ),
+      },
+    ],
+    width: animatedSize.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, image.size.width],
+    }),
+    height: animatedSize.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, image.size.height],
+    }),
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: animatedSize.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -image.size.width / 2],
+    }),
+    marginTop: animatedSize.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -image.size.height / 2],
+    }),
+  }), [animatedSize, image.id, image.size.width, image.size.height, panValues]);
 
   return (
-    <Animated.View
-      {...panResponder.panHandlers}
-      style={{
-        transform: [
-          {
-            translateX: Animated.multiply(
-              animatedSize,
-              panValues[image.id]?.x || 0,
-            ),
-          },
-          {
-            translateY: Animated.multiply(
-              animatedSize,
-              panValues[image.id]?.y || 0,
-            ),
-          },
-        ],
-        width: animatedSize.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, image.size.width],
-        }),
-        height: animatedSize.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, image.size.height],
-        }),
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        marginLeft: animatedSize.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -image.size.width / 2],
-        }),
-        marginTop: animatedSize.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -image.size.height / 2],
-        }),
-      }}>
+    <Animated.View {...panResponder.panHandlers} style={imageStyle}>
       <Image
         source={{uri: image.uri}}
         style={{
@@ -214,4 +220,4 @@ const CustomImage: React.FC<CustomImageProps> = ({
   );
 };
 
-export default CustomImage;
+export default React.memo(CustomImage);
