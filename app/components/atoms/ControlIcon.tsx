@@ -1,14 +1,15 @@
-import {TouchableOpacity, useWindowDimensions} from 'react-native';
+import {TouchableOpacity, useWindowDimensions, StyleProp, ViewStyle} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {EDIT_CONTROLS_RATIO} from '../../constants/ui';
 const ControlIcon: React.FC<{
   name: string;
   color?: string;
   onPress: () => void;
-}> = ({name, color, onPress}) => {
+  style?: StyleProp<ViewStyle>;
+}> = ({name, color, onPress, style}) => {
   const {width} = useWindowDimensions();
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={style}>
       <Icon
         name={name}
         style={{padding: 10}}

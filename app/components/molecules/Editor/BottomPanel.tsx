@@ -1,12 +1,51 @@
 import React from 'react';
-import {View, useWindowDimensions} from 'react-native';
+import {Animated, View, useWindowDimensions} from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
 import {useEditorContext} from '../../../context/EditorContext';
 
-const BottomPanel: React.FC = () => {
-  const {selectedImageId} = useEditorContext();
+interface BottomPanelProps {
+  panValues: {[key: string]: Animated.ValueXY};
+}
+
+const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
+  const {selectedImageId, handleUpdateImage, images} = useEditorContext();
   const {width, height} = useWindowDimensions();
+
+  const handleCenterAlignHorizontal = () => {
+    if (selectedImageId) {
+      const image = images.find(image => image.id === selectedImageId);
+      if (image) {
+        const currentX = image.position.x;
+        const centerY = (height - image.size.height) / 2;
+        handleUpdateImage(selectedImageId, {
+          position: {x: currentX, y: centerY},
+        });
+        panValues[selectedImageId].setValue({
+          x: currentX,
+          y: centerY,
+        });
+      }
+    }
+  };
+
+  const handleCenterAlignVertical = () => {
+    if (selectedImageId) {
+      const image = images.find(image => image.id === selectedImageId);
+      if (image) {
+        const currentY = image.position.y;
+        const centerX = (width - image.size.width) / 2;
+        handleUpdateImage(selectedImageId, {
+          position: {x: centerX, y: currentY},
+        });
+        panValues[selectedImageId].setValue({
+          x: centerX,
+          y: currentY,
+        });
+      }
+    }
+  };
+
   return (
     <View
       style={{
@@ -17,6 +56,19 @@ const BottomPanel: React.FC = () => {
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <ControlIcon name="link" onPress={() => {}} />
           <ControlIcon name="scan" onPress={() => {}} />
+          <ControlIcon
+            name="barcode-sharp"
+            onPress={() => {
+              handleCenterAlignHorizontal();
+            }}
+          />
+          <ControlIcon
+            name="barcode-sharp"
+            style={{transform: [{rotate: '90deg'}]}}
+            onPress={() => {
+              handleCenterAlignVertical();
+            }}
+          />
         </View>
       )}
     </View>
