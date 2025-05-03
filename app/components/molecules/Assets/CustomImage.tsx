@@ -33,7 +33,7 @@ const CustomImage: React.FC<CustomImageProps> = ({
   onUpdate,
   onDelete,
 }) => {
-  const {width} = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
 
   useEffect(() => {
     let isMounted = true;
@@ -49,15 +49,25 @@ const CustomImage: React.FC<CustomImageProps> = ({
       const initialWidth = Math.min(200, width * 0.8);
       const initialHeight = initialWidth / aspectRatio;
       
+      // Center the image on the screen
+      const centerX = width / 2 - initialWidth / 2;
+      const centerY = height / 2 - initialHeight / 2;
+      
+      panValues[image.id].setValue({
+        x: centerX,
+        y: centerY,
+      });
+
       onUpdate(image.id, {
         size: {width: initialWidth, height: initialHeight},
+        position: {x: centerX, y: centerY},
       });
     });
 
     return () => {
       isMounted = false;
     };
-  }, [image.uri, image.id, width, onUpdate]);
+  }, [image.uri, image.id, width, height, onUpdate]);
 
   const handleDelete = useCallback(() => {
     Alert.alert('Delete Image', 'Are you sure you want to delete this image?', [
@@ -161,16 +171,8 @@ const CustomImage: React.FC<CustomImageProps> = ({
       outputRange: [0, image.size.height],
     }),
     position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: animatedSize.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, -image.size.width / 2],
-    }),
-    marginTop: animatedSize.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, -image.size.height / 2],
-    }),
+    top: 0,
+    left: 0,
   }), [animatedSize, image.id, image.size.width, image.size.height, panValues]);
 
   return (
