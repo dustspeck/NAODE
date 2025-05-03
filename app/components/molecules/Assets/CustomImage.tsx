@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useCallback} from 'react';
+import React, {useEffect, useMemo, useCallback, useRef} from 'react';
 import {
   Animated,
   PanResponder,
@@ -23,7 +23,7 @@ interface CustomImageProps {
   onDelete: (id: string) => void;
 }
 
-const CustomImage: React.FC<CustomImageProps> = ({
+const CustomImage: React.FC<CustomImageProps> = React.memo(({
   image,
   isSelected,
   isZoomed,
@@ -34,40 +34,49 @@ const CustomImage: React.FC<CustomImageProps> = ({
   onDelete,
 }) => {
   const {width, height} = useWindowDimensions();
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     
-    // Get the actual image dimensions when it loads
     Image.getSize(image.uri, (imgWidth, imgHeight) => {
-      if (!isMounted) return;
+      if (!isMounted.current) return;
       
-      // Calculate the aspect ratio
       const aspectRatio = imgWidth / imgHeight;
-      
-      // Set a reasonable initial size while maintaining aspect ratio
       const initialWidth = Math.min(200, width * 0.8);
       const initialHeight = initialWidth / aspectRatio;
-      
-      // Center the image on the screen
       const centerX = width / 2 - initialWidth / 2;
       const centerY = height / 2 - initialHeight / 2;
       
-      panValues[image.id].setValue({
-        x: centerX,
-        y: centerY,
-      });
+      // Use requestAnimationFrame to batch updates
+      timeoutId = setTimeout(() => {
+        if (!isMounted.current) return;
+        
+        panValues[image.id].setValue({
+          x: centerX,
+          y: centerY,
+        });
 
-      onUpdate(image.id, {
-        size: {width: initialWidth, height: initialHeight},
-        position: {x: centerX, y: centerY},
-      });
+        onUpdate(image.id, {
+          size: {width: initialWidth, height: initialHeight},
+          position: {x: centerX, y: centerY},
+        });
+      }, 0);
     });
 
     return () => {
-      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [image.uri, image.id, width, height, onUpdate]);
+  }, [image.uri, image.id, width, height, onUpdate, panValues]);
 
   const handleDelete = useCallback(() => {
     Alert.alert('Delete Image', 'Are you sure you want to delete this image?', [
@@ -100,13 +109,6 @@ const CustomImage: React.FC<CustomImageProps> = ({
         panValues[image.id].setValue({
           x: newX,
           y: newY,
-        });
-        
-        onUpdate(image.id, {
-          position: {
-            x: newX,
-            y: newY,
-          },
         });
       },
       onPanResponderRelease: (_, gestureState) => {
@@ -238,6 +240,8 @@ const CustomImage: React.FC<CustomImageProps> = ({
       )}
     </Animated.View>
   );
-};
+});
 
-export default React.memo(CustomImage);
+CustomImage.displayName = 'CustomImage';
+
+export default CustomImage;

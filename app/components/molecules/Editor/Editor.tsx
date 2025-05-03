@@ -17,7 +17,7 @@ interface EditorProps {
   panValues: {[key: string]: Animated.ValueXY};
 }
 
-const Editor: React.FC<EditorProps> = ({
+const Editor: React.FC<EditorProps> = React.memo(({
   animatedSize,
   isZoomed,
   setIsZoomed,
@@ -31,21 +31,26 @@ const Editor: React.FC<EditorProps> = ({
     handleDeleteImage,
   } = useEditorContext();
   const {width, height} = useWindowDimensions();
-  
+  const backHandlerRef = useRef<{remove: () => void} | null>(null);
 
   // Clean up panValues when images are deleted
   useEffect(() => {
-    // console.log(images[0].position);
     const currentImageIds = new Set(images.map(img => img.id));
-    Object.keys(panValues).forEach(id => {
-      if (!currentImageIds.has(id)) {
+    const keysToDelete = Object.keys(panValues).filter(id => !currentImageIds.has(id));
+    
+    if (keysToDelete.length > 0) {
+      keysToDelete.forEach(id => {
         delete panValues[id];
-      }
-    });
+      });
+    }
   }, [images, panValues]);
 
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
+    if (backHandlerRef.current) {
+      backHandlerRef.current.remove();
+    }
+
+    backHandlerRef.current = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
         if (isZoomed) {
@@ -56,7 +61,11 @@ const Editor: React.FC<EditorProps> = ({
       },
     );
 
-    return () => backHandler.remove();
+    return () => {
+      if (backHandlerRef.current) {
+        backHandlerRef.current.remove();
+      }
+    };
   }, [isZoomed, setIsZoomed]);
 
   const containerStyle = useMemo<Animated.WithAnimatedObject<ViewStyle>>(() => ({
@@ -81,28 +90,34 @@ const Editor: React.FC<EditorProps> = ({
     setSelectedImageId(null);
   }, [setSelectedImageId]);
 
+  const renderImages = useCallback(() => {
+    return images.map(image => (
+      <CustomImage
+        key={image.id}
+        image={image}
+        isSelected={selectedImageId === image.id}
+        isZoomed={isZoomed}
+        animatedSize={animatedSize}
+        panValues={panValues}
+        onSelect={setSelectedImageId}
+        onUpdate={handleUpdateImage}
+        onDelete={handleDeleteImage}
+      />
+    ));
+  }, [images, selectedImageId, isZoomed, animatedSize, panValues, setSelectedImageId, handleUpdateImage, handleDeleteImage]);
+
   return (
     <TouchableOpacity activeOpacity={1} onPress={handlePress}>
       <Animated.View style={containerStyle}>
         {isZoomed && (
           <ZoomOutIcon isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
         )}
-        {images.map(image => (
-          <CustomImage
-            key={image.id}
-            image={image}
-            isSelected={selectedImageId === image.id}
-            isZoomed={isZoomed}
-            animatedSize={animatedSize}
-            panValues={panValues}
-            onSelect={setSelectedImageId}
-            onUpdate={handleUpdateImage}
-            onDelete={handleDeleteImage}
-          />
-        ))}
+        {renderImages()}
       </Animated.View>
     </TouchableOpacity>
   );
-};
+});
 
-export default React.memo(Editor);
+Editor.displayName = 'Editor';
+
+export default Editor;
