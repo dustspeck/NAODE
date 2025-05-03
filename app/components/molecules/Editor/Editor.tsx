@@ -14,12 +14,14 @@ interface EditorProps {
   animatedSize: Animated.Value;
   isZoomed: boolean;
   setIsZoomed: (isZoomed: boolean) => void;
+  panValues: {[key: string]: Animated.ValueXY};
 }
 
 const Editor: React.FC<EditorProps> = ({
   animatedSize,
   isZoomed,
   setIsZoomed,
+  panValues,
 }) => {
   const {
     images,
@@ -29,10 +31,11 @@ const Editor: React.FC<EditorProps> = ({
     handleDeleteImage,
   } = useEditorContext();
   const {width, height} = useWindowDimensions();
-  const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;
+  
 
   // Clean up panValues when images are deleted
   useEffect(() => {
+    // console.log(images[0].position);
     const currentImageIds = new Set(images.map(img => img.id));
     Object.keys(panValues).forEach(id => {
       if (!currentImageIds.has(id)) {

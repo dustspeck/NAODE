@@ -75,31 +75,49 @@ const CustomImage: React.FC<CustomImageProps> = ({
 
   const panResponder = useMemo(() => {
     if (!panValues[image.id]) {
-      panValues[image.id] = new Animated.ValueXY();
+      panValues[image.id] = new Animated.ValueXY({
+        x: image.position.x,
+        y: image.position.y,
+      });
     }
 
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: Animated.event(
-        [null, {dx: panValues[image.id].x, dy: panValues[image.id].y}],
-        {
-          useNativeDriver: false,
-        },
-      ),
-      onPanResponderRelease: (_, gestureState) => {
-        if (Math.abs(gestureState.dx) < 2 && Math.abs(gestureState.dy) < 2) {
-          onSelect(image.id);
-        }
-        panValues[image.id].extractOffset();
+      onPanResponderMove: (_, gestureState) => {
+        const newX = image.position.x + gestureState.dx;
+        const newY = image.position.y + gestureState.dy;
+        
+        panValues[image.id].setValue({
+          x: newX,
+          y: newY,
+        });
+        
         onUpdate(image.id, {
           position: {
-            x: gestureState.moveX,
-            y: gestureState.moveY,
+            x: newX,
+            y: newY,
+          },
+        });
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        onSelect(image.id);
+        const newX = image.position.x + gestureState.dx;
+        const newY = image.position.y + gestureState.dy;
+        
+        panValues[image.id].setValue({
+          x: newX,
+          y: newY,
+        });
+        
+        onUpdate(image.id, {
+          position: {
+            x: newX,
+            y: newY,
           },
         });
       },
     });
-  }, [image.id, panValues, onSelect, onUpdate]);
+  }, [image.id, image.position, panValues, onSelect, onUpdate]);
 
   const resizeResponder = useMemo(() => {
     return PanResponder.create({

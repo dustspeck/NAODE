@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {StrictMode, useEffect, useRef} from 'react';
 import {
   SafeAreaView,
   useWindowDimensions,
@@ -20,6 +20,7 @@ function App(): React.JSX.Element {
   const {width, height} = useWindowDimensions();
   const [isZoomed, setIsZoomed] = React.useState(false);
   const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
+  const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;
 
   useEffect(() => {
     if (isZoomed) {
@@ -44,9 +45,10 @@ function App(): React.JSX.Element {
   }, [isZoomed]);
 
   return (
-    <EditorProvider>
-      <SafeAreaView style={{flex: 1}}>
-        <StatusBar barStyle={'light-content'} />
+    <StrictMode>
+      <EditorProvider>
+        <SafeAreaView style={{flex: 1}}>
+          <StatusBar barStyle={'light-content'} />
         <View
           style={{
             flex: 1,
@@ -72,14 +74,16 @@ function App(): React.JSX.Element {
               animatedSize={animatedSize}
               isZoomed={isZoomed}
               setIsZoomed={setIsZoomed}
+              panValues={panValues}
             />
             {!isZoomed && <RightPanel animatedSize={animatedSize} />}
           </View>
 
-          {!isZoomed && <BottomPanel />}
-        </View>
-      </SafeAreaView>
-    </EditorProvider>
+          {!isZoomed && <BottomPanel panValues={panValues} />}
+          </View>
+        </SafeAreaView>
+      </EditorProvider>
+    </StrictMode>
   );
 }
 
