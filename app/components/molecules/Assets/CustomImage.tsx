@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   Animated,
   PanResponder,
@@ -33,6 +33,22 @@ const CustomImage: React.FC<CustomImageProps> = ({
   onDelete,
 }) => {
   const {width, height} = useWindowDimensions();
+
+  useEffect(() => {
+    // Get the actual image dimensions when it loads
+    Image.getSize(image.uri, (imgWidth, imgHeight) => {
+      // Calculate the aspect ratio
+      const aspectRatio = imgWidth / imgHeight;
+      
+      // Set a reasonable initial size while maintaining aspect ratio
+      const initialWidth = Math.min(200, width * 0.8);
+      const initialHeight = initialWidth / aspectRatio;
+      
+      onUpdate(image.id, {
+        size: {width: initialWidth, height: initialHeight},
+      });
+    });
+  }, [image.uri]);
 
   const handleDelete = () => {
     Alert.alert('Delete Image', 'Are you sure you want to delete this image?', [
@@ -80,8 +96,13 @@ const CustomImage: React.FC<CustomImageProps> = ({
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gestureState) => {
-        const newWidth = Math.max(50, image.size.width + gestureState.dx);
-        const newHeight = Math.max(50, image.size.height + gestureState.dy);
+        const aspectRatio = image.size.width / image.size.height;
+        let newWidth = Math.max(50, image.size.width + gestureState.dx);
+        let newHeight = newWidth / aspectRatio;
+        if (newHeight < 50) {
+          newHeight = 50;
+          newWidth = newHeight * aspectRatio;
+        }
         onUpdate(image.id, {
           size: {width: newWidth, height: newHeight},
         });
@@ -135,7 +156,7 @@ const CustomImage: React.FC<CustomImageProps> = ({
         style={{
           width: '100%',
           height: '100%',
-          resizeMode: 'stretch',
+          resizeMode: 'contain',
         }}
       />
       {isSelected && !isZoomed && (
