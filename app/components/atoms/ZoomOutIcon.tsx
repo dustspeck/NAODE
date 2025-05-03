@@ -16,7 +16,8 @@ const ZoomOutIcon: React.FC<ZoomOutIconProps> = ({isZoomed, setIsZoomed}) => {
         position: 'absolute',
         top: height / 8,
         left: 10,
-        opacity: 0.5,
+        backgroundColor: '#3335',
+        borderRadius: 999,
         zIndex: 1000,
       }}>
       <TouchableOpacity
@@ -26,7 +27,7 @@ const ZoomOutIcon: React.FC<ZoomOutIconProps> = ({isZoomed, setIsZoomed}) => {
           name="contract"
           style={{padding: 10}}
           size={width * EDIT_CONTROLS_RATIO * 0.5}
-          color="white"
+          color="#fffa"
         />
       </TouchableOpacity>
     </View>

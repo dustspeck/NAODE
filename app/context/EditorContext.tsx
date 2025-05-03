@@ -1,10 +1,12 @@
-import React, { createContext, useContext } from 'react';
-import { useEditor } from '../hooks/useEditor';
-import { EditorContextType } from '../types';
+import React, {createContext, useContext} from 'react';
+import {useEditor} from '../hooks/useEditor';
+import {EditorContextType} from '../types';
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
-export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const EditorProvider: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
   const editorState = useEditor();
 
   return (
@@ -20,4 +22,4 @@ export const useEditorContext = () => {
     throw new Error('useEditorContext must be used within an EditorProvider');
   }
   return context;
-}; 
+};

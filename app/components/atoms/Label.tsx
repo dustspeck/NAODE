@@ -1,6 +1,6 @@
 import {PixelRatio, Text, TextStyle, View, Animated} from 'react-native';
-import WarningIcon from './WarningIcon'
-import {scale} from 'react-native-size-matters'
+import WarningIcon from './WarningIcon';
+import {scale} from 'react-native-size-matters';
 
 interface ILabelProps {
   text: string;
@@ -15,8 +15,10 @@ const fontScale = PixelRatio.getFontScale();
 export const getFontSize = (size: number) => size / fontScale;
 
 const Label: React.FC<ILabelProps> = props => {
-  const baseSize = props.style?.fontSize ? scale(props.style?.fontSize) : scale(10);
-  const size = props.animatedSize 
+  const baseSize = props.style?.fontSize
+    ? scale(props.style?.fontSize)
+    : scale(10);
+  const size = props.animatedSize
     ? props.animatedSize.interpolate({
         inputRange: [0, 1],
         outputRange: [0, baseSize],

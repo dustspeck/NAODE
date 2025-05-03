@@ -2,7 +2,7 @@ import {GestureResponderEvent, TouchableOpacity, View} from 'react-native';
 import Label from './Label';
 import Icon from 'react-native-vector-icons/Ionicons';
 import WarningIcon from './WarningIcon';
-import { scale } from 'react-native-size-matters';
+import {scale} from 'react-native-size-matters';
 
 interface IIconPillProps {
   icon: string;
@@ -39,7 +39,7 @@ const IconPill: React.FC<IIconPillProps> = props => {
         style={{marginRight: text ? '15%' : 0}}
       />
       <View>
-        <Label text={text || '​'} style={{fontSize:10}} singleLine />
+        <Label text={text || '​'} style={{fontSize: 10}} singleLine />
       </View>
     </TouchableOpacity>
   );

@@ -1,13 +1,13 @@
 import {GestureResponderEvent, TouchableOpacity, ViewStyle} from 'react-native';
 import Label from './Label';
-import { scale } from 'react-native-size-matters';
+import {scale} from 'react-native-size-matters';
 
 interface IActionButtonProps {
   text: string;
   onPress: (event: GestureResponderEvent) => void;
   onLongPress?: (event: GestureResponderEvent) => void;
   type?: 'Primary' | 'Secondary';
-  style?: ViewStyle
+  style?: ViewStyle;
 }
 
 const ActionButton: React.FC<IActionButtonProps> = props => {
@@ -23,7 +23,7 @@ const ActionButton: React.FC<IActionButtonProps> = props => {
         paddingHorizontal: scale(20),
         paddingVertical: scale(5),
         alignItems: 'center',
-        ...style
+        ...style,
       }}>
       <Label
         text={text}

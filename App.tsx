@@ -14,7 +14,7 @@ import RightPanel from './app/components/molecules/Editor/RightPanel';
 import LeftPanel from './app/components/molecules/Editor/LeftPanel';
 import BottomPanel from './app/components/molecules/Editor/BottomPanel';
 import Editor from './app/components/molecules/Editor/Editor';
-import { EditorProvider } from './app/context/EditorContext';
+import {EditorProvider} from './app/context/EditorContext';
 
 function App(): React.JSX.Element {
   const {width, height} = useWindowDimensions();
