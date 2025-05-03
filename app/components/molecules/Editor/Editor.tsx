@@ -28,6 +28,10 @@ const Editor: React.FC<EditorProps> = React.memo(
       setSelectedImageId,
       handleUpdateImage,
       handleDeleteImage,
+      bringToFront,
+      sendToBack,
+      moveLayerUp,
+      moveLayerDown,
     } = useEditorContext();
     const {width, height} = useWindowDimensions();
     const backHandlerRef = useRef<{remove: () => void} | null>(null);
@@ -95,7 +99,10 @@ const Editor: React.FC<EditorProps> = React.memo(
     }, [setSelectedImageId]);
 
     const renderImages = useCallback(() => {
-      return images.map(image => (
+      // Sort images by zIndex to ensure correct layering
+      const sortedImages = [...images].sort((a, b) => a.zIndex - b.zIndex);
+
+      return sortedImages.map(image => (
         <CustomImage
           key={image.id}
           image={image}

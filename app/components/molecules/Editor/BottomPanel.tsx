@@ -9,7 +9,8 @@ interface BottomPanelProps {
 }
 
 const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
-  const {selectedImageId, handleUpdateImage, images} = useEditorContext();
+  const {selectedImageId, handleUpdateImage, images, bringToFront, sendToBack} =
+    useEditorContext();
   const {width, height} = useWindowDimensions();
 
   const handleCenterAlignHorizontal = () => {
@@ -53,21 +54,26 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
         width: width,
       }}>
       {selectedImageId && (
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <ControlIcon name="link" onPress={() => {}} />
-          <ControlIcon name="scan" onPress={() => {}} />
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
           <ControlIcon
             name="barcode-sharp"
-            onPress={() => {
-              handleCenterAlignHorizontal();
-            }}
+            onPress={handleCenterAlignHorizontal}
           />
           <ControlIcon
             name="barcode-sharp"
             style={{transform: [{rotate: '90deg'}]}}
-            onPress={() => {
-              handleCenterAlignVertical();
-            }}
+            onPress={handleCenterAlignVertical}
+          />
+          <View style={{width: 1, height: '100%', backgroundColor: '#333'}} />
+          <ControlIcon
+            name="arrow-up"
+            onPress={() => selectedImageId && bringToFront(selectedImageId)}
+            label="Front"
+          />
+          <ControlIcon
+            name="arrow-down"
+            onPress={() => selectedImageId && sendToBack(selectedImageId)}
+            label="Back"
           />
         </View>
       )}

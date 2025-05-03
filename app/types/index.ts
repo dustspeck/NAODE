@@ -3,6 +3,7 @@ export interface ImageData {
   uri: string;
   position: {x: number; y: number};
   size: {width: number; height: number};
+  zIndex: number;
 }
 
 export interface EditorContextType {
@@ -12,4 +13,8 @@ export interface EditorContextType {
   handleUpdateImage: (id: string, updates: Partial<ImageData>) => void;
   handleDeleteImage: (id: string) => void;
   setSelectedImageId: (id: string | null) => void;
+  bringToFront: (id: string) => void;
+  sendToBack: (id: string) => void;
+  moveLayerUp: (id: string) => void;
+  moveLayerDown: (id: string) => void;
 }
