@@ -1,37 +1,86 @@
 import React, {useMemo} from 'react';
-import {TouchableOpacity, useWindowDimensions, StyleProp, ViewStyle} from 'react-native';
+import {
+  TouchableOpacity,
+  useWindowDimensions,
+  StyleProp,
+  ViewStyle,
+  Text,
+  View,
+  TextStyle,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {EDIT_CONTROLS_RATIO} from '../../constants/ui';
+import {scale} from 'react-native-size-matters';
 
 interface ControlIconProps {
   name: string;
   color?: string;
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
+  label?: string;
+  iconRatio?: number;
 }
 
-const ControlIcon: React.FC<ControlIconProps> = React.memo(({name, color, onPress, style}) => {
-  const {width} = useWindowDimensions();
-  
-  const iconStyle = useMemo(() => ({
-    padding: 10
-  }), []);
+const ControlIcon: React.FC<ControlIconProps> = React.memo(
+  ({name, color, onPress, style, label, iconRatio}) => {
+    const {width} = useWindowDimensions();
 
-  const iconSize = useMemo(() => 
-    width * EDIT_CONTROLS_RATIO * 0.5
-  , [width]);
+    const viewStyle = useMemo<ViewStyle>(
+      () => ({
+        alignSelf: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }),
+      [],
+    );
 
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={style}>
-      <Icon
-        name={name}
-        style={iconStyle}
-        size={iconSize}
-        color={color ?? 'white'}
-      />
-    </TouchableOpacity>
-  );
-});
+    const iconSize = useMemo(() => width * EDIT_CONTROLS_RATIO * (iconRatio ?? 0.5), [width, iconRatio]);
+
+    const containerStyle = useMemo<ViewStyle>(
+      () => ({
+        alignItems: 'center',
+        maxWidth: iconSize + scale(12), // icon size + padding
+        flexShrink: 1,
+      }),
+      [iconSize],
+    );
+
+    const labelContainerStyle = useMemo<ViewStyle>(
+      () => ({
+        flexDirection: 'row',
+      }),
+      [],
+    );
+
+    const labelStyle = useMemo<TextStyle>(
+      () => ({
+        color: color ?? '#eeea',
+        fontSize: scale(7),
+        marginTop: scale(2),
+        textAlign: 'center',
+        flexWrap: 'wrap',
+        width: '100%',
+      }),
+      [color],
+    );
+
+    return (
+      <View style={containerStyle}>
+        <TouchableOpacity
+          onPress={onPress}
+          activeOpacity={0.8}
+          style={[viewStyle, style]}>
+          <Icon name={name} size={iconSize} color={color ?? 'white'} />
+          {label && (
+            <View style={labelContainerStyle}>
+              <Text style={labelStyle}>{label}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  },
+);
 
 ControlIcon.displayName = 'ControlIcon';
 

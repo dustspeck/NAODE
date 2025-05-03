@@ -1,9 +1,4 @@
-import {
-  Animated,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import {Animated, useWindowDimensions, View} from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
 
@@ -30,7 +25,11 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
           }),
           alignItems: 'center',
         }}>
-        <ControlIcon name="expand" onPress={() => setIsZoomed(!isZoomed)} />
+        <ControlIcon
+          name="expand"
+          onPress={() => setIsZoomed(!isZoomed)}
+          label="Full screen"
+        />
       </Animated.View>
     </View>
   );
