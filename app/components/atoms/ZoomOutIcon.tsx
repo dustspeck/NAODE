@@ -30,7 +30,7 @@ const ZoomOutIcon: React.FC<ZoomOutIconProps> = ({isZoomed, setIsZoomed}) => {
             transform: [{rotate: '180deg'}, {translateX: scale(2)}],
           }}
           size={width * EDIT_CONTROLS_RATIO * 0.5}
-          color="#fff3"
+          color="#fff5"
         />
       </TouchableOpacity>
     </View>

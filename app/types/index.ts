@@ -4,6 +4,7 @@ export interface ImageData {
   position: {x: number; y: number};
   size: {width: number; height: number};
   zIndex: number;
+  rotation: number; // Rotation in degrees
 }
 
 export interface EditorContextType {

@@ -19,10 +19,12 @@ interface ControlIconProps {
   style?: StyleProp<ViewStyle>;
   label?: string;
   iconRatio?: number;
+  iconStyle?: StyleProp<ViewStyle>;
+  isSelected?: boolean;
 }
 
 const ControlIcon: React.FC<ControlIconProps> = React.memo(
-  ({name, color, onPress, style, label, iconRatio}) => {
+  ({name, color, onPress, style, label, iconRatio, iconStyle, isSelected}) => {
     const {width} = useWindowDimensions();
 
     const viewStyle = useMemo<ViewStyle>(
@@ -30,8 +32,10 @@ const ControlIcon: React.FC<ControlIconProps> = React.memo(
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: isSelected ? '#444' : '#0000',
+        borderRadius: scale(5),
       }),
-      [],
+      [isSelected],
     );
 
     const iconSize = useMemo(() => width * EDIT_CONTROLS_RATIO * (iconRatio ?? 0.5), [width, iconRatio]);
@@ -70,7 +74,7 @@ const ControlIcon: React.FC<ControlIconProps> = React.memo(
           onPress={onPress}
           activeOpacity={0.8}
           style={[viewStyle, style]}>
-          <Icon name={name} size={iconSize} color={color ?? 'white'} />
+          <Icon name={name} size={iconSize} color={color ?? 'white'} style={iconStyle} />
           {label && (
             <View style={labelContainerStyle}>
               <Text style={labelStyle}>{label}</Text>

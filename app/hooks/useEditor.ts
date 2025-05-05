@@ -13,6 +13,7 @@ export const useEditor = () => {
         position: {x: 0, y: 0},
         size: {width: 200, height: 200},
         zIndex: images.length, // New images are added on top
+        rotation: 0, // Initialize with 0 rotation
       };
       setImages(prevImages => [...prevImages, newImage]);
     },

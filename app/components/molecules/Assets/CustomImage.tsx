@@ -161,19 +161,30 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
       return PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onPanResponderMove: (_, gestureState) => {
+          // Convert gesture coordinates to image space considering rotation
+          const angle = (image.rotation * Math.PI) / 180;
+          const cos = Math.cos(-angle);
+          const sin = Math.sin(-angle);
+          
+          // Transform gesture coordinates to image space
+          const dx = gestureState.dx * cos - gestureState.dy * sin;
+          const dy = gestureState.dx * sin + gestureState.dy * cos;
+          
           const aspectRatio = image.size.width / image.size.height;
-          let newWidth = Math.max(50, image.size.width + gestureState.dx);
+          let newWidth = Math.max(50, image.size.width + dx);
           let newHeight = newWidth / aspectRatio;
+          
           if (newHeight < 50) {
             newHeight = 50;
             newWidth = newHeight * aspectRatio;
           }
+          
           onUpdate(image.id, {
             size: {width: newWidth, height: newHeight},
           });
         },
       });
-    }, [image.id, image.size.width, image.size.height, onUpdate]);
+    }, [image.id, image.size.width, image.size.height, image.rotation, onUpdate]);
 
     const imageStyle = useMemo<Animated.WithAnimatedObject<ViewStyle>>(
       () => ({
@@ -189,6 +200,9 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
               animatedSize,
               panValues[image.id]?.y || 0,
             ),
+          },
+          {
+            rotate: `${image.rotation}deg`,
           },
         ],
         width: animatedSize.interpolate({
@@ -210,6 +224,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
         image.size.width,
         image.size.height,
         image.zIndex,
+        image.rotation,
         panValues,
       ],
     );
