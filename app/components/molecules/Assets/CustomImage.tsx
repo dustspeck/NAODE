@@ -286,7 +286,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
                 justifyContent: 'center',
                 alignItems: 'center',
               }}>
-              <Icon name="trash" size={20} color="black" />
+              <Icon name="close" size={20} color="black" />
             </TouchableOpacity>
           </>
         )}

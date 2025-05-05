@@ -28,10 +28,6 @@ const Editor: React.FC<EditorProps> = React.memo(
       setSelectedImageId,
       handleUpdateImage,
       handleDeleteImage,
-      bringToFront,
-      sendToBack,
-      moveLayerUp,
-      moveLayerDown,
     } = useEditorContext();
     const {width, height} = useWindowDimensions();
     const backHandlerRef = useRef<{remove: () => void} | null>(null);
