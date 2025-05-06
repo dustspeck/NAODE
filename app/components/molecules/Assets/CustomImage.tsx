@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {ImageData} from '../../../types';
+import {MIN_IMAGE_SIZE} from '../../../constants/ui';
 
 interface CustomImageProps {
   image: ImageData;
@@ -168,14 +169,14 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
           
           // Transform gesture coordinates to image space
           const dx = gestureState.dx * cos - gestureState.dy * sin;
-          const dy = gestureState.dx * sin + gestureState.dy * cos;
+          // const dy = gestureState.dx * sin + gestureState.dy * cos;
           
           const aspectRatio = image.size.width / image.size.height;
-          let newWidth = Math.max(50, image.size.width + dx);
+          let newWidth = Math.max(MIN_IMAGE_SIZE, image.size.width + dx);
           let newHeight = newWidth / aspectRatio;
           
-          if (newHeight < 50) {
-            newHeight = 50;
+          if (newHeight < MIN_IMAGE_SIZE) {
+            newHeight = MIN_IMAGE_SIZE;
             newWidth = newHeight * aspectRatio;
           }
           

@@ -1,22 +1,22 @@
 import {View, useWindowDimensions} from 'react-native';
 import {scale} from 'react-native-size-matters';
 
-interface ILeftPanelOverheadProps {
+interface IRightPanelOverheadProps {
   children: React.ReactNode;
 }
 
-const LeftPanelOverhead = ({children}: ILeftPanelOverheadProps) => {
+const RightPanelOverhead = ({children}: IRightPanelOverheadProps) => {
   const {width, height} = useWindowDimensions();
   return (
     <View
       style={{
         position: 'absolute',
-        left: scale(40),
+        right: scale(40),
         top: scale(5),
         width: scale(120),
         zIndex: 1000,
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
+        justifyContent: 'flex-end',
+        alignItems: 'flex-end'
       }}>
       <View
         style={{
@@ -34,4 +34,4 @@ const LeftPanelOverhead = ({children}: ILeftPanelOverheadProps) => {
   );
 };
 
-export default LeftPanelOverhead;
+export default RightPanelOverhead;

@@ -12,6 +12,7 @@ import {useEditorContext} from '../../../context/EditorContext';
 import CustomImage from '../Assets/CustomImage';
 import ControlIcon from '../../atoms/ControlIcon';
 import Label from '../../atoms/Label';
+import CustomText from '../Assets/CustomText';
 
 interface EditorProps {
   animatedSize: Animated.Value;
@@ -24,10 +25,15 @@ const Editor: React.FC<EditorProps> = React.memo(
   ({animatedSize, isZoomed, setIsZoomed, panValues}) => {
     const {
       images,
+      texts,
       selectedImageId,
+      selectedTextId,
       setSelectedImageId,
+      setSelectedTextId,
       handleUpdateImage,
       handleDeleteImage,
+      handleUpdateText,
+      handleDeleteText,
     } = useEditorContext();
     const {width, height} = useWindowDimensions();
     const backHandlerRef = useRef<{remove: () => void} | null>(null);
@@ -122,13 +128,39 @@ const Editor: React.FC<EditorProps> = React.memo(
       handleDeleteImage,
     ]);
 
+    const renderTexts = useCallback(() => {
+      return texts.map(text => (
+        <CustomText
+          key={text.id}
+          text={text}
+          isSelected={selectedTextId === text.id}
+          isZoomed={isZoomed}
+          animatedSize={animatedSize}
+          panValues={panValues}
+          onSelect={setSelectedTextId}
+          onUpdate={handleUpdateText}
+          onDelete={handleDeleteText}
+        />
+      ));
+    }, [
+      texts,
+      selectedTextId,
+      isZoomed,
+      animatedSize,
+      panValues,
+      setSelectedTextId,
+      handleUpdateText,
+      handleDeleteText,
+    ]);
+
     return (
       <TouchableOpacity activeOpacity={1} onPress={handlePress}>
         <Animated.View style={containerStyle}>
           {isZoomed && (
             <ZoomOutIcon isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
           )}
-          {images.length === 0 && (
+          <Label text={JSON.stringify(texts)} />
+          {images.length === 0 && texts.length === 0 && (
             <View
               style={{
                 flex: 1,
@@ -149,6 +181,7 @@ const Editor: React.FC<EditorProps> = React.memo(
             </View>
           )}
           {renderImages()}
+          {renderTexts()}
         </Animated.View>
       </TouchableOpacity>
     );

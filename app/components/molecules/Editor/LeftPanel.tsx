@@ -61,6 +61,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
       {isLayersSelected && (
         <LeftPanelOverhead>
           <View style={{alignItems: 'center', gap: scale(8)}}>
+            <Label text="Layers" style={{color: '#eee', fontSize: scale(5)}} />
             {images.length === 0 && (
               <Label text="No items added" style={{color: '#555'}} />
             )}

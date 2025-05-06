@@ -32,8 +32,9 @@ const ControlIcon: React.FC<ControlIconProps> = React.memo(
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: isSelected ? '#444' : '#0000',
+        backgroundColor: isSelected ? '#333' : '#0000',
         borderRadius: scale(5),
+        padding: scale(2),
       }),
       [isSelected],
     );

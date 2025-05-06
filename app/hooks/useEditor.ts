@@ -1,9 +1,12 @@
 import {useState, useCallback} from 'react';
-import {ImageData} from '../types';
+import {ImageData, TextData} from '../types';
+import {MIN_FONT_SIZE} from '../constants/ui';
 
 export const useEditor = () => {
   const [images, setImages] = useState<ImageData[]>([]);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [texts, setTexts] = useState<TextData[]>([]);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
 
   const handleAddImage = useCallback(
     (uri: string) => {
@@ -21,10 +24,35 @@ export const useEditor = () => {
     [images.length],
   );
 
+  const handleAddText = useCallback((text: string) => {
+    const newText: TextData = {
+      id: Date.now().toString(),
+      text,
+      position: {x: 0, y: -50},
+      fontSize: MIN_FONT_SIZE,
+      fontWeight: 'normal' as 'normal' | 'bold',
+      fontFamily: 'Arial',
+      color: '#fff',
+      zIndex: texts.length,
+      rotation: 0,
+      name: `Text ${texts.length + 1}`,
+    };
+    setTexts(prevTexts => [...prevTexts, newText]);
+  }, []);
+
   const handleUpdateImage = useCallback(
     (id: string, updates: Partial<ImageData>) => {
       setImages(prevImages =>
         prevImages.map(img => (img.id === id ? {...img, ...updates} : img)),
+      );
+    },
+    [],
+  );
+
+  const handleUpdateText = useCallback(
+    (id: string, updates: Partial<TextData>) => {
+      setTexts(prevTexts =>
+        prevTexts.map(text => (text.id === id ? {...text, ...updates} : text)),
       );
     },
     [],
@@ -39,6 +67,10 @@ export const useEditor = () => {
     },
     [selectedImageId],
   );
+
+  const handleDeleteText = useCallback((id: string) => {
+    setTexts(prevTexts => prevTexts.filter(text => text.id !== id));
+  }, []);
 
   const bringToFront = useCallback((id: string) => {
     setImages(prevImages => {
@@ -127,5 +159,11 @@ export const useEditor = () => {
     sendToBack,
     moveLayerUp,
     moveLayerDown,
+    texts,
+    selectedTextId,
+    handleAddText,
+    handleUpdateText,
+    handleDeleteText,
+    setSelectedTextId,
   };
 };
