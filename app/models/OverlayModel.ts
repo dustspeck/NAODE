@@ -12,3 +12,10 @@ export interface IOverlayStore {
   overlays: IOverlay[];
   activeOverlayId?: string;
 }
+
+export interface IParentBounds {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}

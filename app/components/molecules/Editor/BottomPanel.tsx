@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {Animated, View, useWindowDimensions, ScrollView} from 'react-native';
+import {Animated, View, useWindowDimensions} from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
 import {useEditorContext} from '../../../context/EditorContext';
@@ -7,6 +7,10 @@ import {scale} from 'react-native-size-matters';
 import {Slider} from '@miblanchard/react-native-slider';
 import Label from '../../atoms/Label';
 import BottomPanelOverhead from '../../atoms/BottomPanelOverhead';
+import ActionButton from '../../atoms/ActionButton';
+import ModalWindow from '../ModalWindow';
+import {ElementData} from '../../../types';
+import ColorWheel from '../ColorWheel';
 
 interface BottomPanelProps {
   panValues: {[key: string]: Animated.ValueXY};
@@ -26,7 +30,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const [isLayerSelected, setIsLayerSelected] = useState(false);
   const [isCenterSelected, setIsCenterSelected] = useState(false);
   const [isRadiusSelected, setIsRadiusSelected] = useState(false);
-
+  const [isColorPickerVisible, setIsColorPickerVisible] = useState(false);
   useEffect(() => {
     deselectAll();
   }, [selectedElementId]);
@@ -39,6 +43,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     setIsRotationSelected(false);
     setIsLayerSelected(false);
     setIsCenterSelected(false);
+    setIsRadiusSelected(false);
   };
 
   const handleSelectRotation = () => {
@@ -54,6 +59,11 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const handleSelectCenter = () => {
     deselectAll();
     setIsCenterSelected(!isCenterSelected);
+  };
+
+  const handleSelectColor = () => {
+    deselectAll();
+    setIsColorPickerVisible(!isColorPickerVisible);
   };
 
   const handleCenterAlignHorizontal = () => {
@@ -177,6 +187,36 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     }
   };
 
+  const handleColorChange = (hex: string) => {
+    if (selectedElementId) {
+      handleUpdateText(selectedElementId, {color: hex});
+    }
+  };
+
+  const ColorPickerContent = ({
+    selectedElement,
+  }: {
+    selectedElement: ElementData;
+  }) => {
+    return (
+      <View>
+        {selectedElement.type === 'text' && (
+          <View style={{flex: 1}}>
+            <ColorWheel
+              value={selectedElement.color}
+              onChange={handleColorChange}
+            />
+            <ActionButton
+              text="Done"
+              style={{alignSelf: 'flex-end'}}
+              onPress={() => setIsColorPickerVisible(false)}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View
       style={{
@@ -185,6 +225,13 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
       }}>
       {selectedElementId && selectedElement && (
         <>
+          <ModalWindow
+            isVisible={isColorPickerVisible}
+            onBackPressed={() => setIsColorPickerVisible(false)}
+            heading="Choose Color"
+            content={() => ColorPickerContent({selectedElement})}
+          />
+
           {isRotationSelected && (
             <BottomPanelOverhead>
               <Label
@@ -279,6 +326,17 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
               />
             </BottomPanelOverhead>
           )}
+          {isRadiusSelected && selectedElement.type === 'text' && (
+            <BottomPanelOverhead>
+              <ActionButton
+                text="Pick Color"
+                onPress={() => {
+                  setIsColorPickerVisible(true);
+                }}
+                style={{backgroundColor: '#fff'}}
+              />
+            </BottomPanelOverhead>
+          )}
           <View
             style={{
               flexDirection: 'row',
@@ -313,12 +371,27 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             />
             {selectedElement.type === 'image' && (
               <>
-                <View style={{width: 1, height: '100%', backgroundColor: '#333'}} />
+                <View
+                  style={{width: 1, height: '100%', backgroundColor: '#333'}}
+                />
                 <ControlIcon
                   name="square-outline"
                   onPress={handleSelectRadius}
                   isSelected={isRadiusSelected}
                   label="Radius"
+                />
+              </>
+            )}
+            {selectedElement.type === 'text' && (
+              <>
+                <View
+                  style={{width: 1, height: '100%', backgroundColor: '#333'}}
+                />
+                <ControlIcon
+                  name="color-fill-outline"
+                  onPress={handleSelectColor}
+                  isSelected={isColorPickerVisible}
+                  label="Color"
                 />
               </>
             )}

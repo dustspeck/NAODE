@@ -15,6 +15,7 @@ import LeftPanel from './app/components/molecules/Editor/LeftPanel';
 import BottomPanel from './app/components/molecules/Editor/BottomPanel';
 import Editor from './app/components/molecules/Editor/Editor';
 import {EditorProvider} from './app/context/EditorContext';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 function App(): React.JSX.Element {
   const {width, height} = useWindowDimensions();
@@ -45,45 +46,45 @@ function App(): React.JSX.Element {
   }, [isZoomed]);
 
   return (
-    <StrictMode>
+    <GestureHandlerRootView style={{flex: 1}}>
       <EditorProvider>
         <SafeAreaView style={{flex: 1}}>
           <StatusBar barStyle={'light-content'} />
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'black',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          {!isZoomed && (
-            <>
-              <StatusBarView color="black" />
-              <EditorHeader />
-            </>
-          )}
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'black',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
             {!isZoomed && (
-              <LeftPanel
+              <>
+                <StatusBarView color="black" />
+                <EditorHeader />
+              </>
+            )}
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              {!isZoomed && (
+                <LeftPanel
+                  animatedSize={animatedSize}
+                  isZoomed={isZoomed}
+                  setIsZoomed={setIsZoomed}
+                />
+              )}
+              <Editor
                 animatedSize={animatedSize}
                 isZoomed={isZoomed}
                 setIsZoomed={setIsZoomed}
+                panValues={panValues}
               />
-            )}
-            <Editor
-              animatedSize={animatedSize}
-              isZoomed={isZoomed}
-              setIsZoomed={setIsZoomed}
-              panValues={panValues}
-            />
-            {!isZoomed && <RightPanel animatedSize={animatedSize} />}
-          </View>
+              {!isZoomed && <RightPanel animatedSize={animatedSize} />}
+            </View>
 
-          {!isZoomed && <BottomPanel panValues={panValues} />}
+            {!isZoomed && <BottomPanel panValues={panValues} />}
           </View>
         </SafeAreaView>
       </EditorProvider>
-    </StrictMode>
+    </GestureHandlerRootView>
   );
 }
 
