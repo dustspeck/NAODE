@@ -236,14 +236,27 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
       ],
     );
 
+    const borderRadius = useMemo(() => {
+      return animatedSize.interpolate({
+        inputRange: [0, 1],
+        outputRange: [
+          0,
+          image.size.width > image.size.height
+            ? (image.size.height / 100) * image.borderRadius
+            : (image.size.width / 100) * image.borderRadius,
+        ],
+      });
+    }, [image.size.width, image.size.height, image.borderRadius, animatedSize]);
+
     return (
       <Animated.View {...panResponder.panHandlers} style={imageStyle}>
-        <Image
+        <Animated.Image
           source={{uri: image.uri}}
           style={{
             width: '100%',
             height: '100%',
             resizeMode: 'contain',
+            borderRadius,
           }}
         />
         {isSelected && !isZoomed && (

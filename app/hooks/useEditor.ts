@@ -20,6 +20,7 @@ export const useEditor = () => {
         rotation: 0,
         name: `${elements.length + 1} Image`,
         type: 'image',
+        borderRadius: 0,
       };
       setElements(prevElements => [...prevElements, newElement]);
     },

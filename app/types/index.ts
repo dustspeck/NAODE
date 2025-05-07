@@ -7,7 +7,7 @@ export interface ImageData {
   rotation: number; // Rotation in degrees
   name: string;
   type: 'image';
-  // TODO: Add border radius
+  borderRadius: number;
 }
 
 export interface TextData {

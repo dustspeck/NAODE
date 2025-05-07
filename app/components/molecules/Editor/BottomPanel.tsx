@@ -25,6 +25,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const [isRotationSelected, setIsRotationSelected] = useState(false);
   const [isLayerSelected, setIsLayerSelected] = useState(false);
   const [isCenterSelected, setIsCenterSelected] = useState(false);
+  const [isRadiusSelected, setIsRadiusSelected] = useState(false);
 
   useEffect(() => {
     deselectAll();
@@ -163,6 +164,19 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     }
   };
 
+  const handleSelectRadius = () => {
+    deselectAll();
+    setIsRadiusSelected(!isRadiusSelected);
+  };
+
+  const handleRadiusChange = (value: number[]) => {
+    if (selectedElementId) {
+      handleUpdateImage(selectedElementId, {
+        borderRadius: value[0],
+      });
+    }
+  };
+
   return (
     <View
       style={{
@@ -242,6 +256,29 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
               />
             </BottomPanelOverhead>
           )}
+          {isRadiusSelected && selectedElement.type === 'image' && (
+            <BottomPanelOverhead>
+              <Label
+                style={{width: scale(30)}}
+                text={`${selectedElement.borderRadius}%`}
+              />
+              <Slider
+                value={selectedElement.borderRadius}
+                onValueChange={handleRadiusChange}
+                minimumValue={0}
+                maximumValue={50}
+                step={1}
+                trackStyle={{
+                  height: scale(2),
+                  width: scale(100),
+                }}
+                thumbTintColor="#fff"
+                minimumTrackTintColor="#fff"
+                maximumTrackTintColor="#333"
+                trackClickable={false}
+              />
+            </BottomPanelOverhead>
+          )}
           <View
             style={{
               flexDirection: 'row',
@@ -274,6 +311,17 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
               isSelected={isRotationSelected}
               label="Rotate"
             />
+            {selectedElement.type === 'image' && (
+              <>
+                <View style={{width: 1, height: '100%', backgroundColor: '#333'}} />
+                <ControlIcon
+                  name="square-outline"
+                  onPress={handleSelectRadius}
+                  isSelected={isRadiusSelected}
+                  label="Radius"
+                />
+              </>
+            )}
           </View>
         </>
       )}
