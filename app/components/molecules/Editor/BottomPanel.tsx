@@ -13,8 +13,14 @@ interface BottomPanelProps {
 }
 
 const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
-  const {selectedImageId, handleUpdateImage, images, bringToFront, sendToBack} =
-    useEditorContext();
+  const {
+    selectedElementId,
+    handleUpdateImage,
+    handleUpdateText,
+    elements,
+    bringToFront,
+    sendToBack,
+  } = useEditorContext();
   const {width, height} = useWindowDimensions();
   const [isRotationSelected, setIsRotationSelected] = useState(false);
   const [isLayerSelected, setIsLayerSelected] = useState(false);
@@ -22,10 +28,10 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
 
   useEffect(() => {
     deselectAll();
-  }, [selectedImageId]);
+  }, [selectedElementId]);
 
-  const selectedImage = selectedImageId
-    ? images.find(image => image.id === selectedImageId)
+  const selectedElement = selectedElementId
+    ? elements.find(element => element.id === selectedElementId)
     : null;
 
   const deselectAll = () => {
@@ -50,49 +56,73 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   };
 
   const handleCenterAlignHorizontal = () => {
-    if (selectedImageId) {
-      const image = images.find(image => image.id === selectedImageId);
-      if (image) {
-        const currentX = image.position.x;
-        const centerY = (height - image.size.height) / 2;
-        handleUpdateImage(selectedImageId, {
-          position: {x: currentX, y: centerY},
-        });
-        panValues[selectedImageId].setValue({
+    if (selectedElementId) {
+      const element = elements.find(
+        element => element.id === selectedElementId,
+      );
+      if (element) {
+        const currentX = element.position.x;
+        const centerY = (height - element.size.height) / 2;
+        panValues[selectedElementId].setValue({
           x: currentX,
           y: centerY,
         });
+        switch (element.type) {
+          case 'image':
+            handleUpdateImage(selectedElementId, {
+              position: {x: currentX, y: centerY},
+            });
+            break;
+          case 'text':
+            handleUpdateText(selectedElementId, {
+              position: {x: currentX, y: centerY},
+            });
+            break;
+        }
       }
     }
   };
 
   const handleCenterAlignVertical = () => {
-    if (selectedImageId) {
-      const image = images.find(image => image.id === selectedImageId);
-      if (image) {
-        const currentY = image.position.y;
-        const centerX = (width - image.size.width) / 2;
-        handleUpdateImage(selectedImageId, {
-          position: {x: centerX, y: currentY},
-        });
-        panValues[selectedImageId].setValue({
+    if (selectedElementId) {
+      const element = elements.find(
+        element => element.id === selectedElementId,
+      );
+      if (element) {
+        const currentY = element.position.y;
+        const centerX = (width - element.size.width) / 2;
+        panValues[selectedElementId].setValue({
           x: centerX,
           y: currentY,
         });
+        switch (element.type) {
+          case 'image':
+            handleUpdateImage(selectedElementId, {
+              position: {x: centerX, y: currentY},
+            });
+            break;
+          case 'text':
+            handleUpdateText(selectedElementId, {
+              position: {x: centerX, y: currentY},
+            });
+            break;
+        }
       }
     }
   };
 
   const handleCenterAll = () => {
-    if (selectedImageId) {
-      const image = images.find(image => image.id === selectedImageId);
-      if (image) {
-        const centerX = (width - image.size.width) / 2;
-        const centerY = (height - image.size.height) / 2;
-        handleUpdateImage(selectedImageId, {
+    if (selectedElementId) {
+      const element = elements.find(
+        element => element.id === selectedElementId,
+      );
+      if (element) {
+        const centerX = (width - element.size.width) / 2;
+        const centerY = (height - element.size.height) / 2;
+        handleUpdateImage(selectedElementId, {
           position: {x: centerX, y: centerY},
         });
-        panValues[selectedImageId].setValue({
+        panValues[selectedElementId].setValue({
           x: centerX,
           y: centerY,
         });
@@ -108,26 +138,26 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   }, []);
 
   const handleRotateRight = () => {
-    if (selectedImageId && selectedImage) {
-      const currentRotation = selectedImage.rotation;
+    if (selectedElementId && selectedElement) {
+      const currentRotation = selectedElement.rotation;
       const nearest90 = snapToNearest90(currentRotation);
       const nextRotation = nearest90 + 90;
       // Ensure we stay within -180 to 180 range
       const newRotation = ((nextRotation + 180) % 360) - 180;
-      handleUpdateImage(selectedImageId, {
+      handleUpdateImage(selectedElementId, {
         rotation: newRotation,
       });
     }
   };
 
   const handleRotationChange = (value: number[]) => {
-    if (selectedImageId) {
+    if (selectedElementId) {
       // Add snapping behavior around 0
       let rotation = value[0];
       if (Math.abs(rotation) < 5) {
         rotation = 0;
       }
-      handleUpdateImage(selectedImageId, {
+      handleUpdateImage(selectedElementId, {
         rotation,
       });
     }
@@ -139,17 +169,17 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
         height: height * EDIT_CONTROLS_RATIO,
         width: width,
       }}>
-      {selectedImageId && selectedImage && (
+      {selectedElementId && selectedElement && (
         <>
           {isRotationSelected && (
             <BottomPanelOverhead>
               <Label
                 style={{width: scale(30)}}
-                text={`${Math.round(selectedImage.rotation)}°`}
+                text={`${Math.round(selectedElement.rotation)}°`}
               />
               <View>
                 <Slider
-                  value={selectedImage.rotation}
+                  value={selectedElement.rotation}
                   trackClickable={false}
                   minimumValue={-180}
                   maximumValue={180}
@@ -176,12 +206,16 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             <BottomPanelOverhead>
               <ControlIcon
                 name="arrow-up"
-                onPress={() => selectedImageId && bringToFront(selectedImageId)}
+                onPress={() =>
+                  selectedElementId && bringToFront(selectedElementId)
+                }
                 label="Front"
               />
               <ControlIcon
                 name="arrow-down"
-                onPress={() => selectedImageId && sendToBack(selectedImageId)}
+                onPress={() =>
+                  selectedElementId && sendToBack(selectedElementId)
+                }
                 label="Back"
               />
             </BottomPanelOverhead>
@@ -244,7 +278,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
         </>
       )}
 
-      {!selectedImageId && (
+      {!selectedElementId && (
         <View
           style={{
             flexDirection: 'row',
@@ -253,7 +287,11 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             marginTop: scale(10),
           }}>
           <Label
-            text={images.length > 0 ? 'Select element to edit' : 'Add element to edit'}
+            text={
+              elements.length > 0
+                ? 'Select element to edit'
+                : 'Add element to edit'
+            }
             style={{color: '#444a'}}
           />
         </View>

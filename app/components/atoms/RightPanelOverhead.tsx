@@ -16,7 +16,7 @@ const RightPanelOverhead = ({children}: IRightPanelOverheadProps) => {
         width: scale(120),
         zIndex: 1000,
         justifyContent: 'flex-end',
-        alignItems: 'flex-end'
+        alignItems: 'flex-end',
       }}>
       <View
         style={{

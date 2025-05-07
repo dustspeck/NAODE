@@ -1,49 +1,59 @@
 import {useState, useCallback} from 'react';
-import {ImageData, TextData} from '../types';
-import {MIN_FONT_SIZE} from '../constants/ui';
+import {ElementData, ImageData, TextData} from '../types';
+import {DEFAULT_FONT_SIZE} from '../constants/ui';
+import { Animated } from 'react-native';
 
 export const useEditor = () => {
-  const [images, setImages] = useState<ImageData[]>([]);
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [texts, setTexts] = useState<TextData[]>([]);
-  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+  const [elements, setElements] = useState<ElementData[]>([]);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(
+    null,
+  );
 
   const handleAddImage = useCallback(
     (uri: string) => {
-      const newImage: ImageData = {
+      const newElement: ImageData = {
         id: Date.now().toString(),
         uri,
         position: {x: 0, y: 0},
         size: {width: 200, height: 200},
-        zIndex: images.length,
+        zIndex: elements.length,
         rotation: 0,
-        name: `Layer ${images.length + 1}`,
+        name: `${elements.length + 1} Image`,
+        type: 'image',
       };
-      setImages(prevImages => [...prevImages, newImage]);
+      setElements(prevElements => [...prevElements, newElement]);
     },
-    [images.length],
+    [elements.length],
   );
 
-  const handleAddText = useCallback((text: string) => {
-    const newText: TextData = {
-      id: Date.now().toString(),
-      text,
-      position: {x: 0, y: -50},
-      fontSize: MIN_FONT_SIZE,
-      fontWeight: 'normal' as 'normal' | 'bold',
-      fontFamily: 'Arial',
-      color: '#fff',
-      zIndex: texts.length,
-      rotation: 0,
-      name: `Text ${texts.length + 1}`,
-    };
-    setTexts(prevTexts => [...prevTexts, newText]);
-  }, []);
+  const handleAddText = useCallback(
+    (text: string) => {
+      const newElement: TextData = {
+        id: Date.now().toString(),
+        text,
+        position: {x: 0, y: 0},
+        size: {width: 200, height: 200},
+        fontSize: DEFAULT_FONT_SIZE,
+        fontWeight: 'normal' as 'normal' | 'bold',
+        fontFamily: 'Arial',
+        color: '#fff',
+        zIndex: elements.length,
+        rotation: 0,
+        name: `${elements.length + 1} Text`,
+        type: 'text',
+      };
+      setElements(prevElements => [...prevElements, newElement]);
+    },
+    [elements.length],
+  );
 
   const handleUpdateImage = useCallback(
     (id: string, updates: Partial<ImageData>) => {
-      setImages(prevImages =>
-        prevImages.map(img => (img.id === id ? {...img, ...updates} : img)),
+      setElements(
+        prevElements =>
+          prevElements.map(element =>
+            element.id === id ? {...element, ...updates} : element,
+          ) as ElementData[],
       );
     },
     [],
@@ -51,119 +61,120 @@ export const useEditor = () => {
 
   const handleUpdateText = useCallback(
     (id: string, updates: Partial<TextData>) => {
-      setTexts(prevTexts =>
-        prevTexts.map(text => (text.id === id ? {...text, ...updates} : text)),
+      setElements(
+        prevElements =>
+          prevElements.map(element =>
+            element.id === id ? {...element, ...updates} : element,
+          ) as ElementData[],
       );
     },
     [],
   );
 
-  const handleDeleteImage = useCallback(
+  const handleDeleteElement = useCallback(
     (id: string) => {
-      setImages(prevImages => prevImages.filter(img => img.id !== id));
-      if (selectedImageId === id) {
-        setSelectedImageId(null);
+      setElements(prevElements =>
+        prevElements.filter(element => element.id !== id),
+      );
+      if (selectedElementId === id) {
+        setSelectedElementId(null);
       }
     },
-    [selectedImageId],
+    [selectedElementId],
   );
 
-  const handleDeleteText = useCallback((id: string) => {
-    setTexts(prevTexts => prevTexts.filter(text => text.id !== id));
-  }, []);
-
   const bringToFront = useCallback((id: string) => {
-    setImages(prevImages => {
-      const maxZIndex = Math.max(...prevImages.map(img => img.zIndex));
-      return prevImages.map(img =>
-        img.id === id ? {...img, zIndex: maxZIndex + 1} : img,
+    setElements(prevElements => {
+      const maxZIndex = Math.max(
+        ...prevElements.map(element => element.zIndex),
+      );
+      return prevElements.map(element =>
+        element.id === id ? {...element, zIndex: maxZIndex + 1} : element,
       );
     });
   }, []);
 
   const sendToBack = useCallback((id: string) => {
-    setImages(prevImages => {
-      const minZIndex = Math.min(...prevImages.map(img => img.zIndex));
-      return prevImages.map(img =>
-        img.id === id ? {...img, zIndex: minZIndex - 1} : img,
+    setElements(prevElements => {
+      const minZIndex = Math.min(
+        ...prevElements.map(element => element.zIndex),
+      );
+      return prevElements.map(element =>
+        element.id === id ? {...element, zIndex: minZIndex - 1} : element,
       );
     });
   }, []);
 
   const moveLayerUp = useCallback((id: string) => {
-    setImages(prevImages => {
-      const currentImage = prevImages.find(img => img.id === id);
-      if (!currentImage) return prevImages;
+    setElements(prevElements => {
+      const currentElement = prevElements.find(element => element.id === id);
+      if (!currentElement) return prevElements;
 
-      const nextImage = prevImages
-        .filter(img => img.zIndex > currentImage.zIndex)
+      const nextElement = prevElements
+        .filter(element => element.zIndex > currentElement.zIndex)
         .sort((a, b) => a.zIndex - b.zIndex)[0];
 
-      if (!nextImage) return prevImages;
+      if (!nextElement) return prevElements;
 
-      return prevImages.map(img => {
-        if (img.id === id) {
+      return prevElements.map(element => {
+        if (element.id === id) {
           return {
-            ...img,
-            zIndex: nextImage.zIndex,
+            ...element,
+            zIndex: nextElement.zIndex,
           };
         }
-        if (img.id === nextImage.id) {
+        if (element.id === nextElement.id) {
           return {
-            ...img,
-            zIndex: currentImage.zIndex,
+            ...element,
+            zIndex: currentElement.zIndex,
           };
         }
-        return img;
+        return element;
       });
     });
   }, []);
 
   const moveLayerDown = useCallback((id: string) => {
-    setImages(prevImages => {
-      const currentImage = prevImages.find(img => img.id === id);
-      if (!currentImage) return prevImages;
+    setElements(prevElements => {
+      const currentElement = prevElements.find(element => element.id === id);
+      if (!currentElement) return prevElements;
 
-      const prevImage = prevImages
-        .filter(img => img.zIndex < currentImage.zIndex)
+      const prevElement = prevElements
+        .filter(element => element.zIndex < currentElement.zIndex)
         .sort((a, b) => b.zIndex - a.zIndex)[0];
 
-      if (!prevImage) return prevImages;
+      if (!prevElement) return prevElements;
 
-      return prevImages.map(img => {
-        if (img.id === id) {
+      return prevElements.map(element => {
+        if (element.id === id) {
           return {
-            ...img,
-            zIndex: prevImage.zIndex,
+            ...element,
+            zIndex: prevElement.zIndex,
           };
         }
-        if (img.id === prevImage.id) {
+        if (element.id === prevElement.id) {
           return {
-            ...img,
-            zIndex: currentImage.zIndex,
+            ...element,
+            zIndex: currentElement.zIndex,
           };
         }
-        return img;
+        return element;
       });
     });
   }, []);
 
   return {
-    images,
-    selectedImageId,
+    elements,
+    selectedElementId,
     handleAddImage,
     handleUpdateImage,
-    handleDeleteImage,
-    setSelectedImageId,
+    handleDeleteElement,
+    setSelectedElementId,
     bringToFront,
     sendToBack,
     moveLayerUp,
     moveLayerDown,
-    texts,
-    selectedTextId,
     handleAddText,
     handleUpdateText,
-    handleDeleteText,
-    setSelectedTextId,
   };
 };

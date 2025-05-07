@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {
   View,
   Animated,
@@ -7,10 +7,15 @@ import {
   PanResponder,
   TextStyle,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {TextData} from '../../../types';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {MAX_FONT_SIZE, MIN_FONT_SIZE} from '../../../constants/ui';
+import {
+  EDIT_WINDOW_RATIO,
+  MAX_FONT_SIZE,
+  MIN_FONT_SIZE,
+} from '../../../constants/ui';
 
 interface CustomTextProps {
   text: TextData;
@@ -36,6 +41,7 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
   }) => {
     const {width, height} = useWindowDimensions();
     const isMounted = useRef(true);
+    const textRef = useRef<Text>(null);
     const isInitialized = useRef(false);
 
     useEffect(() => {
@@ -47,14 +53,33 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
 
     useEffect(() => {
       // Only initialize position and size if they haven't been set yet
-      if (!isInitialized.current && (!text.position.x || !text.position.y)) {
+      if (
+        !isInitialized.current &&
+        (!text.position.x ||
+          !text.position.y ||
+          !text.fontSize ||
+          !text.size.width ||
+          !text.size.height)
+      ) {
         let timeoutId: NodeJS.Timeout;
+
+        if (!isMounted.current) return;
+
+        let textWidth = 0;
+        let textHeight = 0;
+        textRef.current?.measure((_x, _y, width, _height, _pageX, _pageY) => {
+          textWidth = width;
+        });
+
+        textRef.current?.measure((_x, _y, _width, height, _pageX, _pageY) => {
+          textHeight = height;
+        });
+
+        const centerX = width / 2 - textWidth / 2;
+        const centerY = height / 2 - textHeight / 2;
 
         timeoutId = setTimeout(() => {
           if (!isMounted.current) return;
-
-          const centerX = 0;
-          const centerY = 0;
 
           panValues[text.id].setValue({
             x: centerX,
@@ -62,12 +87,13 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
           });
 
           onUpdate(text.id, {
-            fontSize: MIN_FONT_SIZE,
+            size: {width: textWidth, height: textHeight},
             position: {
               x: centerX,
               y: centerY,
             },
           });
+
           isInitialized.current = true;
         }, 0);
 
@@ -79,13 +105,57 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
       }
     }, [
       text,
-      isSelected,
-      isZoomed,
-      animatedSize,
-      panValues,
+      text.id,
+      width,
+      height,
       onUpdate,
+      panValues,
       text.position,
+      text.size,
+      text.fontSize,
     ]);
+
+    // Calculate the size of the text based on the font size
+    useEffect(() => {
+      if (!textRef.current) return;
+
+      const timeoutId = setTimeout(() => {
+        textRef.current?.measure((_x, _y, width, height, _pageX, _pageY) => {
+          if (!isMounted.current) return;
+
+          // Scale the text to the size of the edit window
+          const newWidth = width * (1 / EDIT_WINDOW_RATIO);
+          const newHeight = height * (1 / EDIT_WINDOW_RATIO);
+
+          // Only update if dimensions have actually changed
+
+          if (width !== newWidth || height !== newHeight) {
+            onUpdate(text.id, {
+              size: {
+                width: newWidth,
+                height: newHeight,
+              },
+            });
+          }
+        });
+      }, 100); // Add debounce to prevent rapid updates
+
+      return () => clearTimeout(timeoutId);
+    }, [text.fontSize, text.id, onUpdate, text.size.width, text.size.height]);
+
+    const handleDelete = useCallback(() => {
+      Alert.alert('Delete Text', 'Are you sure you want to delete this text?', [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => onDelete(text.id),
+        },
+      ]);
+    }, [text.id, onDelete]);
 
     const panResponder = useMemo(() => {
       if (!panValues[text.id]) {
@@ -165,30 +235,42 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
               panValues[text.id]?.y || 0,
             ),
           },
+          {
+            rotate: `${text.rotation}deg`,
+          },
         ],
-        fontSize: animatedSize.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, text.fontSize],
-        }),
         position: 'absolute',
         top: 0,
         left: 0,
         zIndex: text.zIndex,
       }),
-      [animatedSize, panValues, text.id, text.fontSize],
+      [
+        animatedSize,
+        panValues,
+        text.id,
+        text.fontSize,
+        text.rotation,
+        text.zIndex,
+        text.size.width,
+        text.size.height,
+      ],
     );
 
     return (
       <Animated.View {...panResponder.panHandlers} style={textStyle}>
-        <Text
+        <Animated.Text
+          ref={textRef}
           style={{
-            fontSize: text.fontSize,
+            fontSize: animatedSize.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, text.fontSize],
+            }),
             color: text.color,
             fontWeight: text.fontWeight,
             fontFamily: text.fontFamily,
           }}>
           {text.text}
-        </Text>
+        </Animated.Text>
         {isSelected && !isZoomed && (
           <>
             <View
@@ -204,7 +286,7 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
               }}
             />
             <TouchableOpacity
-              onPress={() => {}}
+              onPress={handleDelete}
               style={{
                 position: 'absolute',
                 right: -10,

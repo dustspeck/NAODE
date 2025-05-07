@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useMemo, useCallback} from 'react';
+import React, {useRef, useEffect, useMemo, useCallback, useState} from 'react';
 import {
   Animated,
   TouchableOpacity,
@@ -13,6 +13,7 @@ import CustomImage from '../Assets/CustomImage';
 import ControlIcon from '../../atoms/ControlIcon';
 import Label from '../../atoms/Label';
 import CustomText from '../Assets/CustomText';
+import {ImageData, TextData} from '../../../types';
 
 interface EditorProps {
   animatedSize: Animated.Value;
@@ -24,25 +25,22 @@ interface EditorProps {
 const Editor: React.FC<EditorProps> = React.memo(
   ({animatedSize, isZoomed, setIsZoomed, panValues}) => {
     const {
-      images,
-      texts,
-      selectedImageId,
-      selectedTextId,
-      setSelectedImageId,
-      setSelectedTextId,
+      elements,
+      selectedElementId,
+      setSelectedElementId,
       handleUpdateImage,
-      handleDeleteImage,
+      handleDeleteElement,
       handleUpdateText,
-      handleDeleteText,
     } = useEditorContext();
     const {width, height} = useWindowDimensions();
     const backHandlerRef = useRef<{remove: () => void} | null>(null);
+    const [isDebugEnabled, setIsDebugEnabled] = useState(false);
 
-    // Clean up panValues when images are deleted
+    // Clean up panValues when elements are deleted
     useEffect(() => {
-      const currentImageIds = new Set(images.map(img => img.id));
+      const currentElementIds = new Set(elements.map(element => element.id));
       const keysToDelete = Object.keys(panValues).filter(
-        id => !currentImageIds.has(id),
+        id => !currentElementIds.has(id),
       );
 
       if (keysToDelete.length > 0) {
@@ -50,7 +48,7 @@ const Editor: React.FC<EditorProps> = React.memo(
           delete panValues[id];
         });
       }
-    }, [images, panValues]);
+    }, [elements, panValues]);
 
     useEffect(() => {
       if (backHandlerRef.current) {
@@ -97,60 +95,55 @@ const Editor: React.FC<EditorProps> = React.memo(
     );
 
     const handlePress = useCallback(() => {
-      setSelectedImageId(null);
-    }, [setSelectedImageId]);
+      setSelectedElementId(null);
+    }, [setSelectedElementId]);
 
-    const renderImages = useCallback(() => {
+    const renderElements = useCallback(() => {
       // Sort images by zIndex to ensure correct layering
-      const sortedImages = [...images].sort((a, b) => a.zIndex - b.zIndex);
+      const sortedElements = [...elements].sort((a, b) => a.zIndex - b.zIndex);
 
-      return sortedImages.map(image => (
-        <CustomImage
-          key={image.id}
-          image={image}
-          isSelected={selectedImageId === image.id}
-          isZoomed={isZoomed}
-          animatedSize={animatedSize}
-          panValues={panValues}
-          onSelect={setSelectedImageId}
-          onUpdate={handleUpdateImage}
-          onDelete={handleDeleteImage}
-        />
-      ));
+      return sortedElements.map(element => {
+        switch (element.type) {
+          case 'image':
+            return (
+              <CustomImage
+                key={element.id}
+                image={element as ImageData}
+                isSelected={selectedElementId === element.id}
+                isZoomed={isZoomed}
+                animatedSize={animatedSize}
+                panValues={panValues}
+                onSelect={setSelectedElementId}
+                onUpdate={handleUpdateImage}
+                onDelete={handleDeleteElement}
+              />
+            );
+          case 'text':
+            return (
+              <CustomText
+                key={element.id}
+                text={element as TextData}
+                isSelected={selectedElementId === element.id}
+                isZoomed={isZoomed}
+                animatedSize={animatedSize}
+                panValues={panValues}
+                onSelect={setSelectedElementId}
+                onUpdate={handleUpdateText}
+                onDelete={handleDeleteElement}
+              />
+            );
+        }
+      });
     }, [
-      images,
-      selectedImageId,
+      elements,
+      selectedElementId,
       isZoomed,
       animatedSize,
       panValues,
-      setSelectedImageId,
+      setSelectedElementId,
       handleUpdateImage,
-      handleDeleteImage,
-    ]);
-
-    const renderTexts = useCallback(() => {
-      return texts.map(text => (
-        <CustomText
-          key={text.id}
-          text={text}
-          isSelected={selectedTextId === text.id}
-          isZoomed={isZoomed}
-          animatedSize={animatedSize}
-          panValues={panValues}
-          onSelect={setSelectedTextId}
-          onUpdate={handleUpdateText}
-          onDelete={handleDeleteText}
-        />
-      ));
-    }, [
-      texts,
-      selectedTextId,
-      isZoomed,
-      animatedSize,
-      panValues,
-      setSelectedTextId,
+      handleDeleteElement,
       handleUpdateText,
-      handleDeleteText,
     ]);
 
     return (
@@ -159,8 +152,7 @@ const Editor: React.FC<EditorProps> = React.memo(
           {isZoomed && (
             <ZoomOutIcon isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
           )}
-          <Label text={JSON.stringify(texts)} />
-          {images.length === 0 && texts.length === 0 && (
+          {elements.length === 0 && (
             <View
               style={{
                 flex: 1,
@@ -180,9 +172,41 @@ const Editor: React.FC<EditorProps> = React.memo(
               </View>
             </View>
           )}
-          {renderImages()}
-          {renderTexts()}
+          {elements.length > 0 && isDebugEnabled && (
+            <>
+              {elements.map(element => (
+                <View
+                  key={element.id}
+                  style={{position: 'absolute', top: 0, left: 0}}>
+                  <View
+                    style={{
+                      height: (height - element.size.height) / 2,
+                      width: (width - element.size.width) / 2,
+                      backgroundColor: '#f0f2',
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: element.position.y,
+                      left: element.position.x,
+                      height: element.size.height,
+                      width: element.size.width,
+                      backgroundColor: '#f002',
+                    }}
+                  />
+                </View>
+              ))}
+            </>
+          )}
+          {isDebugEnabled && <Label text={JSON.stringify(elements)} />}
+          {renderElements()}
         </Animated.View>
+          <ControlIcon
+            name="build"
+            style={{position: 'absolute', bottom: 70, right: 0, opacity: 0.5, zIndex: 1000}}
+            onPress={() => setIsDebugEnabled(!isDebugEnabled)}
+          />
       </TouchableOpacity>
     );
   },

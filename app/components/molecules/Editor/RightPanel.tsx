@@ -12,13 +12,14 @@ import ControlIcon from '../../atoms/ControlIcon';
 import RightPanelOverhead from '../../atoms/RightPanelOverhead';
 import Label from '../../atoms/Label';
 import {scale} from 'react-native-size-matters';
+
 interface RightPanelProps {
   animatedSize: Animated.Value;
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({animatedSize}) => {
   const {width, height} = useWindowDimensions();
-  const {handleAddImage, selectedImageId, handleAddText, selectedTextId} = useEditorContext();
+  const {handleAddImage, selectedElementId, handleAddText} = useEditorContext();
   const [isAddSelected, setIsAddSelected] = useState(false);
 
   const onAddPress = () => {
@@ -49,10 +50,10 @@ const RightPanel: React.FC<RightPanelProps> = ({animatedSize}) => {
   };
 
   useEffect(() => {
-    if (selectedImageId === null) {
+    if (selectedElementId === null) {
       setIsAddSelected(false);
     }
-  }, [selectedImageId]);
+  }, [selectedElementId]);
 
   return (
     <View>

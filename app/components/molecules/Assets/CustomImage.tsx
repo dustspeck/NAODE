@@ -166,26 +166,32 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
           const angle = (image.rotation * Math.PI) / 180;
           const cos = Math.cos(-angle);
           const sin = Math.sin(-angle);
-          
+
           // Transform gesture coordinates to image space
           const dx = gestureState.dx * cos - gestureState.dy * sin;
           // const dy = gestureState.dx * sin + gestureState.dy * cos;
-          
+
           const aspectRatio = image.size.width / image.size.height;
           let newWidth = Math.max(MIN_IMAGE_SIZE, image.size.width + dx);
           let newHeight = newWidth / aspectRatio;
-          
+
           if (newHeight < MIN_IMAGE_SIZE) {
             newHeight = MIN_IMAGE_SIZE;
             newWidth = newHeight * aspectRatio;
           }
-          
+
           onUpdate(image.id, {
             size: {width: newWidth, height: newHeight},
           });
         },
       });
-    }, [image.id, image.size.width, image.size.height, image.rotation, onUpdate]);
+    }, [
+      image.id,
+      image.size.width,
+      image.size.height,
+      image.rotation,
+      onUpdate,
+    ]);
 
     const imageStyle = useMemo<Animated.WithAnimatedObject<ViewStyle>>(
       () => ({

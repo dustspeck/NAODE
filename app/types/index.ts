@@ -6,12 +6,15 @@ export interface ImageData {
   zIndex: number;
   rotation: number; // Rotation in degrees
   name: string;
+  type: 'image';
+  // TODO: Add border radius
 }
 
 export interface TextData {
   id: string;
   text: string;
   fontSize: number;
+  size: {width: number; height: number};
   fontWeight: 'normal' | 'bold';
   fontFamily: string;
   color: string;
@@ -19,23 +22,22 @@ export interface TextData {
   zIndex: number;
   rotation: number; // Rotation in degrees
   name: string;
+  type: 'text';
 }
 
+export type ElementData = ImageData | TextData;
+
 export interface EditorContextType {
-  images: ImageData[];
-  selectedImageId: string | null;
+  elements: ElementData[];
+  selectedElementId: string | null;
+  setSelectedElementId: (id: string | null) => void;
   handleAddImage: (uri: string) => void;
   handleUpdateImage: (id: string, updates: Partial<ImageData>) => void;
-  handleDeleteImage: (id: string) => void;
-  setSelectedImageId: (id: string | null) => void;
+  handleDeleteElement: (id: string) => void;
   bringToFront: (id: string) => void;
   sendToBack: (id: string) => void;
   moveLayerUp: (id: string) => void;
   moveLayerDown: (id: string) => void;
-  texts: TextData[];
-  selectedTextId: string | null;
   handleAddText: (text: string) => void;
   handleUpdateText: (id: string, updates: Partial<TextData>) => void;
-  handleDeleteText: (id: string) => void;
-  setSelectedTextId: (id: string | null) => void;
 }

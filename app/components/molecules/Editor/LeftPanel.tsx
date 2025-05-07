@@ -13,6 +13,7 @@ import {useEffect, useState} from 'react';
 import LeftPanelOverhead from '../../atoms/LeftPanelOverhead';
 import Label from '../../atoms/Label';
 import {useEditorContext} from '../../../context/EditorContext';
+
 interface LeftPanelProps {
   animatedSize: Animated.Value;
   isZoomed: boolean;
@@ -26,19 +27,23 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
 }) => {
   const {width, height} = useWindowDimensions();
   const [isLayersSelected, setIsLayersSelected] = useState(false);
-  const {images, selectedImageId, setSelectedImageId, handleDeleteImage} =
-    useEditorContext();
+  const {
+    elements,
+    selectedElementId,
+    setSelectedElementId,
+    handleDeleteElement,
+  } = useEditorContext();
 
   useEffect(() => {
-    if (selectedImageId === null) {
+    if (selectedElementId === null) {
       setIsLayersSelected(false);
     }
-  }, [selectedImageId]);
+  }, [selectedElementId]);
 
   const handleLayersPress = () => {
     if (isLayersSelected) {
       setIsLayersSelected(false);
-    } else if (images.length === 0) {
+    } else if (elements.length === 0) {
       ToastAndroid.show('No items added', ToastAndroid.SHORT);
     } else {
       setIsLayersSelected(!isLayersSelected);
@@ -51,7 +56,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => handleDeleteImage(id),
+        onPress: () => handleDeleteElement(id),
       },
     ]);
   };
@@ -62,14 +67,14 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
         <LeftPanelOverhead>
           <View style={{alignItems: 'center', gap: scale(8)}}>
             <Label text="Layers" style={{color: '#eee', fontSize: scale(5)}} />
-            {images.length === 0 && (
+            {elements.length === 0 && (
               <Label text="No items added" style={{color: '#555'}} />
             )}
-            {images.map(image => (
+            {elements.map(element => (
               <TouchableOpacity
-                key={image.id}
+                key={element.id}
                 activeOpacity={0.8}
-                onPress={() => setSelectedImageId(image.id)}
+                onPress={() => setSelectedElementId(element.id)}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -81,14 +86,14 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
                     height: scale(5),
                     borderRadius: scale(3),
                     backgroundColor:
-                      selectedImageId === image.id ? '#eee' : '#0000',
+                      selectedElementId === element.id ? '#eee' : '#0000',
                     borderWidth: 1,
                     borderColor: '#555',
                   }}
                 />
                 <View style={{flex: 1}}>
                   <Label
-                    text={image.name}
+                    text={element.name}
                     style={{
                       fontSize: scale(8),
                     }}
@@ -99,7 +104,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
                   style={{backgroundColor: '#555', padding: scale(2)}}
                   iconRatio={0.3}
                   onPress={() => {
-                    handleDeletePress(image.id);
+                    handleDeletePress(element.id);
                   }}
                 />
               </TouchableOpacity>
