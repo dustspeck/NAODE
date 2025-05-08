@@ -38,16 +38,24 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
     const {width, height} = useWindowDimensions();
     const isMounted = useRef(true);
     const isInitialized = useRef(false);
+    const lastUpdateTime = useRef(0);
+    const resizeAnimationFrame = useRef<number | null>(null);
+    const initialDimensions = useRef({width: 0, height: 0});
+    const initialPosition = useRef({x: 0, y: 0});
+    const initialGesture = useRef({x: 0, y: 0});
+    const aspectRatio = useRef(1);
 
     useEffect(() => {
       isMounted.current = true;
       return () => {
         isMounted.current = false;
+        if (resizeAnimationFrame.current) {
+          cancelAnimationFrame(resizeAnimationFrame.current);
+        }
       };
     }, []);
 
     useEffect(() => {
-      // Only initialize position and size if they haven't been set yet
       if (
         !isInitialized.current &&
         (!image.position.x ||
@@ -55,19 +63,17 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
           !image.size.width ||
           !image.size.height)
       ) {
-        let timeoutId: NodeJS.Timeout;
-
         Image.getSize(image.uri, (imgWidth, imgHeight) => {
           if (!isMounted.current) return;
 
-          const aspectRatio = imgWidth / imgHeight;
+          const ratio = imgWidth / imgHeight;
+          aspectRatio.current = ratio;
           const initialWidth = Math.min(200, width * 0.8);
-          const initialHeight = initialWidth / aspectRatio;
+          const initialHeight = initialWidth / ratio;
           const centerX = width / 2 - initialWidth / 2;
           const centerY = height / 2 - initialHeight / 2;
 
-          // Use requestAnimationFrame to batch updates
-          timeoutId = setTimeout(() => {
+          resizeAnimationFrame.current = requestAnimationFrame(() => {
             if (!isMounted.current) return;
 
             panValues[image.id].setValue({
@@ -80,26 +86,13 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
               position: {x: centerX, y: centerY},
             });
 
+            initialDimensions.current = {width: initialWidth, height: initialHeight};
+            initialPosition.current = {x: centerX, y: centerY};
             isInitialized.current = true;
-          }, 0);
+          });
         });
-
-        return () => {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
-        };
       }
-    }, [
-      image.uri,
-      image.id,
-      width,
-      height,
-      onUpdate,
-      panValues,
-      image.position,
-      image.size,
-    ]);
+    }, [image.uri, image.id, width, height, onUpdate, panValues]);
 
     const handleDelete = useCallback(() => {
       Alert.alert(
@@ -161,37 +154,71 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
     const resizeResponder = useMemo(() => {
       return PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: (_, gestureState) => {
+          initialDimensions.current = {
+            width: image.size.width,
+            height: image.size.height,
+          };
+          initialPosition.current = {
+            x: image.position.x,
+            y: image.position.y,
+          };
+          initialGesture.current = {
+            x: gestureState.x0,
+            y: gestureState.y0,
+          };
+        },
         onPanResponderMove: (_, gestureState) => {
-          // Convert gesture coordinates to image space considering rotation
-          const angle = (image.rotation * Math.PI) / 180;
-          const cos = Math.cos(-angle);
-          const sin = Math.sin(-angle);
+          const now = Date.now();
+          if (now - lastUpdateTime.current < 16) return; // Cap at ~60fps
+          lastUpdateTime.current = now;
 
-          // Transform gesture coordinates to image space
-          const dx = gestureState.dx * cos - gestureState.dy * sin;
-          // const dy = gestureState.dx * sin + gestureState.dy * cos;
+          // Calculate the distance moved from the initial touch point
+          const dx = gestureState.moveX - initialGesture.current.x;
+          const dy = gestureState.moveY - initialGesture.current.y;
 
-          const aspectRatio = image.size.width / image.size.height;
-          let newWidth = Math.max(MIN_IMAGE_SIZE, image.size.width + dx);
-          let newHeight = newWidth / aspectRatio;
+          // Calculate the diagonal distance moved
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const direction = Math.atan2(dy, dx);
 
-          if (newHeight < MIN_IMAGE_SIZE) {
-            newHeight = MIN_IMAGE_SIZE;
-            newWidth = newHeight * aspectRatio;
+          // Calculate the new width based on the diagonal movement
+          const newWidth = Math.max(
+            MIN_IMAGE_SIZE,
+            initialDimensions.current.width + distance * Math.cos(direction),
+          );
+          const newHeight = newWidth / aspectRatio.current;
+
+          // Calculate the new position to maintain the resize handle position
+          const newX = initialPosition.current.x;
+          const newY = initialPosition.current.y;
+
+          // Cancel any pending animation frame
+          if (resizeAnimationFrame.current) {
+            cancelAnimationFrame(resizeAnimationFrame.current);
           }
 
-          onUpdate(image.id, {
-            size: {width: newWidth, height: newHeight},
+          // Schedule the update for the next frame
+          resizeAnimationFrame.current = requestAnimationFrame(() => {
+            if (!isMounted.current) return;
+
+            onUpdate(image.id, {
+              size: {width: newWidth, height: newHeight},
+              position: {x: newX, y: newY},
+            });
+
+            panValues[image.id].setValue({
+              x: newX,
+              y: newY,
+            });
           });
         },
+        onPanResponderRelease: () => {
+          if (resizeAnimationFrame.current) {
+            cancelAnimationFrame(resizeAnimationFrame.current);
+          }
+        },
       });
-    }, [
-      image.id,
-      image.size.width,
-      image.size.height,
-      image.rotation,
-      onUpdate,
-    ]);
+    }, [image.id, image.position, image.size, onUpdate, panValues]);
 
     const imageStyle = useMemo<Animated.WithAnimatedObject<ViewStyle>>(
       () => ({

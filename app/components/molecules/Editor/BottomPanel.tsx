@@ -230,18 +230,24 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     );
   };
 
-  const TextValueContent = ({
-    selectedElement,
-  }: {
+  const TextValueContent: React.FC<{
     selectedElement: ElementData;
-  }) => {
+  }> = ({selectedElement}) => {
+    if (selectedElement.type !== 'text') {
+      return null;
+    }
+    const [text, setText] = useState(selectedElement.text);
+    const handleDone = () => {
+      setIsTextValueSelected(false);
+      handleTextChange(text);
+    };
     return (
       <View>
         {selectedElement.type === 'text' && (
           <View style={{flex: 1}}>
             <TextInput
               multiline
-              value={selectedElement.text}
+              value={text}
               style={{
                 backgroundColor: '#0a0a0a',
                 paddingHorizontal: scale(10),
@@ -251,12 +257,12 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                 fontSize: scale(16),
                 marginBottom: scale(20),
               }}
-              onChangeText={handleTextChange}
+              onChangeText={setText}
             />
             <ActionButton
               text="Done"
               style={{alignSelf: 'flex-end'}}
-              onPress={() => setIsTextValueSelected(false)}
+              onPress={handleDone}
             />
           </View>
         )}
@@ -281,7 +287,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             isVisible={isTextValueSelected}
             onBackPressed={() => setIsTextValueSelected(false)}
             heading="Edit Text"
-            content={() => TextValueContent({selectedElement})}
+            content={() => <TextValueContent selectedElement={selectedElement} />}
           />
 
           {isRotationSelected && (
