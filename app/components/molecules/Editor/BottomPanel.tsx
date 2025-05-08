@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {Animated, View, useWindowDimensions} from 'react-native';
+import {Animated, TextInput, View, useWindowDimensions} from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
 import {useEditorContext} from '../../../context/EditorContext';
@@ -31,6 +31,8 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const [isCenterSelected, setIsCenterSelected] = useState(false);
   const [isRadiusSelected, setIsRadiusSelected] = useState(false);
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false);
+  const [isTextValueSelected, setIsTextValueSelected] = useState(false);
+
   useEffect(() => {
     deselectAll();
   }, [selectedElementId]);
@@ -64,6 +66,11 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const handleSelectColor = () => {
     deselectAll();
     setIsColorPickerVisible(!isColorPickerVisible);
+  };
+
+  const handleSelectTextValue = () => {
+    deselectAll();
+    setIsTextValueSelected(!isTextValueSelected);
   };
 
   const handleCenterAlignHorizontal = () => {
@@ -193,6 +200,12 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     }
   };
 
+  const handleTextChange = (text: string) => {
+    if (selectedElementId) {
+      handleUpdateText(selectedElementId, {text});
+    }
+  };
+
   const ColorPickerContent = ({
     selectedElement,
   }: {
@@ -217,6 +230,39 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     );
   };
 
+  const TextValueContent = ({
+    selectedElement,
+  }: {
+    selectedElement: ElementData;
+  }) => {
+    return (
+      <View>
+        {selectedElement.type === 'text' && (
+          <View style={{flex: 1}}>
+            <TextInput
+              multiline
+              value={selectedElement.text}
+              style={{
+                backgroundColor: '#0a0a0a',
+                paddingHorizontal: scale(10),
+                paddingVertical: scale(5),
+                borderRadius: scale(12),
+                color: '#fff',
+                fontSize: scale(16),
+                marginBottom: scale(20),
+              }}
+              onChangeText={handleTextChange}
+            />
+            <ActionButton
+              text="Done"
+              style={{alignSelf: 'flex-end'}}
+              onPress={() => setIsTextValueSelected(false)}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
   return (
     <View
       style={{
@@ -230,6 +276,12 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             onBackPressed={() => setIsColorPickerVisible(false)}
             heading="Choose Color"
             content={() => ColorPickerContent({selectedElement})}
+          />
+          <ModalWindow
+            isVisible={isTextValueSelected}
+            onBackPressed={() => setIsTextValueSelected(false)}
+            heading="Edit Text"
+            content={() => TextValueContent({selectedElement})}
           />
 
           {isRotationSelected && (
@@ -326,17 +378,6 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
               />
             </BottomPanelOverhead>
           )}
-          {isRadiusSelected && selectedElement.type === 'text' && (
-            <BottomPanelOverhead>
-              <ActionButton
-                text="Pick Color"
-                onPress={() => {
-                  setIsColorPickerVisible(true);
-                }}
-                style={{backgroundColor: '#fff'}}
-              />
-            </BottomPanelOverhead>
-          )}
           <View
             style={{
               flexDirection: 'row',
@@ -392,6 +433,19 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                   onPress={handleSelectColor}
                   isSelected={isColorPickerVisible}
                   label="Color"
+                />
+              </>
+            )}
+            {selectedElement.type === 'text' && (
+              <>
+                <View
+                  style={{width: 1, height: '100%', backgroundColor: '#333'}}
+                />
+                <ControlIcon
+                  name="pencil-outline"
+                  onPress={handleSelectTextValue}
+                  isSelected={isTextValueSelected}
+                  label="Text"
                 />
               </>
             )}
