@@ -1,19 +1,19 @@
 import React, {useRef, useEffect, useMemo, useCallback, useState} from 'react';
 import {
   Animated,
-  TouchableOpacity,
   useWindowDimensions,
   BackHandler,
   ViewStyle,
   View,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import ZoomOutIcon from '../../atoms/ZoomOutIcon';
 import {useEditorContext} from '../../../context/EditorContext';
 import CustomImage from '../Assets/CustomImage';
-import ControlIcon from '../../atoms/ControlIcon';
-import Label from '../../atoms/Label';
 import CustomText from '../Assets/CustomText';
 import {ImageData, TextData} from '../../../types';
+import Label from '../../atoms/Label';
+import ControlIcon from '../../atoms/ControlIcon';
 
 interface EditorProps {
   animatedSize: Animated.Value;
@@ -21,6 +21,101 @@ interface EditorProps {
   setIsZoomed: (isZoomed: boolean) => void;
   panValues: {[key: string]: Animated.ValueXY};
 }
+
+// Separate component for zoom control to prevent unnecessary re-renders
+const ZoomControl = React.memo(
+  ({
+    isZoomed,
+    setIsZoomed,
+  }: {
+    isZoomed: boolean;
+    setIsZoomed: (isZoomed: boolean) => void;
+  }) => {
+    const {height} = useWindowDimensions();
+    if (!isZoomed) return null;
+
+    return (
+      <View
+        style={{
+          position: 'absolute',
+          top: height / 8,
+          left: 10,
+          zIndex: 1000,
+        }}>
+        <ZoomOutIcon isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
+      </View>
+    );
+  },
+);
+
+ZoomControl.displayName = 'ZoomControl';
+
+// Separate component for element rendering to prevent unnecessary re-renders
+const ElementRenderer = React.memo(
+  ({
+    element,
+    isSelected,
+    isZoomed,
+    animatedSize,
+    panValues,
+    onSelect,
+    onUpdate,
+    onDelete,
+  }: {
+    element: ImageData | TextData;
+    isSelected: boolean;
+    isZoomed: boolean;
+    animatedSize: Animated.Value;
+    panValues: {[key: string]: Animated.ValueXY};
+    onSelect: (id: string) => void;
+    onUpdate: (id: string, updates: Partial<ImageData | TextData>) => void;
+    onDelete: (id: string) => void;
+  }) => {
+    if (element.type === 'image') {
+      return (
+        <CustomImage
+          key={element.id}
+          image={element as ImageData}
+          isSelected={isSelected}
+          isZoomed={isZoomed}
+          animatedSize={animatedSize}
+          panValues={panValues}
+          onSelect={onSelect}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+        />
+      );
+    }
+
+    return (
+      <CustomText
+        key={element.id}
+        text={element as TextData}
+        isSelected={isSelected}
+        isZoomed={isZoomed}
+        animatedSize={animatedSize}
+        panValues={panValues}
+        onSelect={onSelect}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+      />
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.element === nextProps.element &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isZoomed === nextProps.isZoomed &&
+      prevProps.animatedSize === nextProps.animatedSize &&
+      prevProps.panValues === nextProps.panValues &&
+      prevProps.onSelect === nextProps.onSelect &&
+      prevProps.onUpdate === nextProps.onUpdate &&
+      prevProps.onDelete === nextProps.onDelete
+    );
+  },
+);
+
+ElementRenderer.displayName = 'ElementRenderer';
 
 const Editor: React.FC<EditorProps> = React.memo(
   ({animatedSize, isZoomed, setIsZoomed, panValues}) => {
@@ -98,60 +193,36 @@ const Editor: React.FC<EditorProps> = React.memo(
       setSelectedElementId(null);
     }, [setSelectedElementId]);
 
-    const renderElements = useCallback(() => {
-      // Sort images by zIndex to ensure correct layering
-      const sortedElements = [...elements].sort((a, b) => a.zIndex - b.zIndex);
+    // Memoize the element handlers to prevent unnecessary re-renders
+    const elementHandlers = useMemo(
+      () => ({
+        onSelect: setSelectedElementId,
+        onUpdate: (id: string, updates: Partial<ImageData | TextData>) => {
+          if (updates.type === 'image') {
+            handleUpdateImage(id, updates as Partial<ImageData>);
+          } else {
+            handleUpdateText(id, updates as Partial<TextData>);
+          }
+        },
+        onDelete: handleDeleteElement,
+      }),
+      [
+        setSelectedElementId,
+        handleUpdateImage,
+        handleUpdateText,
+        handleDeleteElement,
+      ],
+    );
 
-      return sortedElements.map(element => {
-        switch (element.type) {
-          case 'image':
-            return (
-              <CustomImage
-                key={element.id}
-                image={element as ImageData}
-                isSelected={selectedElementId === element.id}
-                isZoomed={isZoomed}
-                animatedSize={animatedSize}
-                panValues={panValues}
-                onSelect={setSelectedElementId}
-                onUpdate={handleUpdateImage}
-                onDelete={handleDeleteElement}
-              />
-            );
-          case 'text':
-            return (
-              <CustomText
-                key={element.id}
-                text={element as TextData}
-                isSelected={selectedElementId === element.id}
-                isZoomed={isZoomed}
-                animatedSize={animatedSize}
-                panValues={panValues}
-                onSelect={setSelectedElementId}
-                onUpdate={handleUpdateText}
-                onDelete={handleDeleteElement}
-              />
-            );
-        }
-      });
-    }, [
-      elements,
-      selectedElementId,
-      isZoomed,
-      animatedSize,
-      panValues,
-      setSelectedElementId,
-      handleUpdateImage,
-      handleDeleteElement,
-      handleUpdateText,
-    ]);
+    // Memoize sorted elements to prevent unnecessary sorting on every render
+    const sortedElements = useMemo(
+      () => [...elements].sort((a, b) => a.zIndex - b.zIndex),
+      [elements],
+    );
 
     return (
-      <TouchableOpacity activeOpacity={1} onPress={handlePress}>
+      <TouchableWithoutFeedback onPress={handlePress}>
         <Animated.View style={containerStyle}>
-          {isZoomed && (
-            <ZoomOutIcon isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
-          )}
           {elements.length === 0 && (
             <View
               style={{
@@ -172,42 +243,30 @@ const Editor: React.FC<EditorProps> = React.memo(
               </View>
             </View>
           )}
-          {elements.length > 0 && isDebugEnabled && (
-            <>
-              {elements.map(element => (
-                <View
-                  key={element.id}
-                  style={{position: 'absolute', top: 0, left: 0}}>
-                  <View
-                    style={{
-                      height: (height - element.size.height) / 2,
-                      width: (width - element.size.width) / 2,
-                      backgroundColor: '#f0f2',
-                    }}
-                  />
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: element.position.y,
-                      left: element.position.x,
-                      height: element.size.height,
-                      width: element.size.width,
-                      backgroundColor: '#f002',
-                    }}
-                  />
-                </View>
-              ))}
-            </>
-          )}
-          {isDebugEnabled && <Label text={JSON.stringify(elements)} />}
-          {renderElements()}
+          {sortedElements.map(element => (
+            <ElementRenderer
+              key={element.id}
+              element={element}
+              isSelected={selectedElementId === element.id}
+              isZoomed={isZoomed}
+              animatedSize={animatedSize}
+              panValues={panValues}
+              onSelect={elementHandlers.onSelect}
+              onUpdate={elementHandlers.onUpdate}
+              onDelete={elementHandlers.onDelete}
+            />
+          ))}
+          <ZoomControl isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
         </Animated.View>
-          <ControlIcon
-            name="build"
-            style={{position: 'absolute', bottom: 70, right: 0, opacity: 0.5, zIndex: 1000}}
-            onPress={() => setIsDebugEnabled(!isDebugEnabled)}
-          />
-      </TouchableOpacity>
+      </TouchableWithoutFeedback>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.animatedSize === nextProps.animatedSize &&
+      prevProps.isZoomed === nextProps.isZoomed &&
+      prevProps.setIsZoomed === nextProps.setIsZoomed &&
+      prevProps.panValues === nextProps.panValues
     );
   },
 );

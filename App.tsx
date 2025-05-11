@@ -1,11 +1,5 @@
-import React, {StrictMode, useEffect, useRef} from 'react';
-import {
-  SafeAreaView,
-  useWindowDimensions,
-  View,
-  StatusBar,
-  Animated,
-} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {SafeAreaView, View, StatusBar, Animated} from 'react-native';
 import StatusBarView from './app/components/atoms/StatusBarView';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
 import EditorHeader from './app/components/molecules/Editor/Header';
@@ -18,7 +12,6 @@ import {EditorProvider} from './app/context/EditorContext';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 function App(): React.JSX.Element {
-  const {width, height} = useWindowDimensions();
   const [isZoomed, setIsZoomed] = React.useState(false);
   const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
   const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;

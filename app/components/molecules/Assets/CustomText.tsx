@@ -8,6 +8,7 @@ import {
   TextStyle,
   TouchableOpacity,
   Alert,
+  ViewStyle,
 } from 'react-native';
 import {TextData} from '../../../types';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -28,6 +29,81 @@ interface CustomTextProps {
   onDelete: (id: string) => void;
 }
 
+// Separate component for selection controls to prevent unnecessary re-renders
+const SelectionControls = React.memo(
+  ({
+    onDelete,
+    resizeResponder,
+  }: {
+    onDelete: () => void;
+    resizeResponder: ReturnType<typeof PanResponder.create>;
+  }) => {
+    const selectionBorderStyle = useMemo<ViewStyle>(
+      () => ({
+        position: 'absolute',
+        top: -1,
+        left: -1,
+        right: -1,
+        bottom: -1,
+        borderWidth: 1,
+        borderColor: '#eee',
+        borderRadius: 0,
+      }),
+      [],
+    );
+
+    const controlButtonStyle = useMemo<ViewStyle>(
+      () => ({
+        position: 'absolute',
+        width: 30,
+        height: 30,
+        backgroundColor: '#eee',
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }),
+      [],
+    );
+
+    const deleteButtonStyle = useMemo<ViewStyle>(
+      () => ({
+        ...controlButtonStyle,
+        right: -10,
+        top: -10,
+      }),
+      [controlButtonStyle],
+    );
+
+    const resizeButtonStyle = useMemo<ViewStyle>(
+      () => ({
+        ...controlButtonStyle,
+        right: -10,
+        bottom: -10,
+      }),
+      [controlButtonStyle],
+    );
+
+    return (
+      <>
+        <View style={selectionBorderStyle} />
+        <TouchableOpacity onPress={onDelete} style={deleteButtonStyle}>
+          <Icon name="close" size={20} color="black" />
+        </TouchableOpacity>
+        <View {...resizeResponder.panHandlers} style={resizeButtonStyle}>
+          <Icon
+            name="resize"
+            size={20}
+            style={{transform: [{rotate: '90deg'}]}}
+            color="black"
+          />
+        </View>
+      </>
+    );
+  },
+);
+
+SelectionControls.displayName = 'SelectionControls';
+
 const CustomText: React.FC<CustomTextProps> = React.memo(
   ({
     text,
@@ -47,6 +123,20 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
     const resizeAnimationFrame = useRef<number | null>(null);
     const lastFontSize = useRef(text.fontSize);
     const lastDimensions = useRef({width: 0, height: 0});
+
+    // Memoize the text style to prevent recreation on every render
+    const textContentStyle = useMemo<Animated.WithAnimatedObject<TextStyle>>(
+      () => ({
+        fontSize: animatedSize.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, text.fontSize],
+        }),
+        color: text.color,
+        fontWeight: text.fontWeight,
+        fontFamily: text.fontFamily,
+      }),
+      [animatedSize, text.fontSize, text.color, text.fontWeight, text.fontFamily],
+    );
 
     useEffect(() => {
       isMounted.current = true;
@@ -101,7 +191,6 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
       }
     }, [text.id, width, height, onUpdate, panValues]);
 
-    // Update dimensions when font size changes
     useEffect(() => {
       if (!textRef.current || text.fontSize === lastFontSize.current) return;
 
@@ -112,7 +201,6 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
           const newWidth = textWidth * (1 / EDIT_WINDOW_RATIO);
           const newHeight = textHeight * (1 / EDIT_WINDOW_RATIO);
 
-          // Only update if dimensions have changed significantly
           if (
             Math.abs(newWidth - lastDimensions.current.width) > 1 ||
             Math.abs(newHeight - lastDimensions.current.height) > 1
@@ -125,7 +213,6 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
         });
       };
 
-      // Use requestAnimationFrame for smooth updates
       resizeAnimationFrame.current = requestAnimationFrame(updateDimensions);
       lastFontSize.current = text.fontSize;
 
@@ -197,12 +284,10 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
           if (now - lastUpdateTime.current < 16) return; // Cap at ~60fps
           lastUpdateTime.current = now;
 
-          // Convert gesture coordinates to text space considering rotation
           const angle = (text.rotation * Math.PI) / 180;
           const cos = Math.cos(-angle);
           const sin = Math.sin(-angle);
 
-          // Transform gesture coordinates to text space
           const dx = gestureState.dx * cos - gestureState.dy * sin;
 
           let newFontSize = Math.max(MIN_FONT_SIZE, text.fontSize + dx);
@@ -210,12 +295,10 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
             newFontSize = MAX_FONT_SIZE;
           }
 
-          // Cancel any pending animation frame
           if (resizeAnimationFrame.current) {
             cancelAnimationFrame(resizeAnimationFrame.current);
           }
 
-          // Schedule the update for the next frame
           resizeAnimationFrame.current = requestAnimationFrame(() => {
             if (!isMounted.current) return;
             onUpdate(text.id, {
@@ -224,7 +307,6 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
           });
         },
         onPanResponderRelease: () => {
-          // Ensure the final update is processed
           if (resizeAnimationFrame.current) {
             cancelAnimationFrame(resizeAnimationFrame.current);
           }
@@ -256,84 +338,34 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
         left: 0,
         zIndex: text.zIndex,
       }),
-      [
-        animatedSize,
-        panValues,
-        text.id,
-        text.rotation,
-        text.zIndex,
-      ],
+      [animatedSize, panValues, text.id, text.rotation, text.zIndex],
     );
 
     return (
       <Animated.View {...panResponder.panHandlers} style={textStyle}>
-        <Animated.Text
-          ref={textRef}
-          style={{
-            fontSize: animatedSize.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, text.fontSize],
-            }),
-            color: text.color,
-            fontWeight: text.fontWeight,
-            fontFamily: text.fontFamily,
-          }}>
+        <Animated.Text ref={textRef} style={textContentStyle}>
           {text.text}
         </Animated.Text>
         {isSelected && !isZoomed && (
-          <>
-            <View
-              style={{
-                position: 'absolute',
-                top: -1,
-                left: -1,
-                right: -1,
-                bottom: -1,
-                borderWidth: 1,
-                borderColor: '#eee',
-                borderRadius: 0,
-              }}
-            />
-            <TouchableOpacity
-              onPress={handleDelete}
-              style={{
-                position: 'absolute',
-                right: -10,
-                top: -10,
-                width: 30,
-                height: 30,
-                backgroundColor: '#eee',
-                borderRadius: 10,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-              <Icon name="close" size={20} color="black" />
-            </TouchableOpacity>
-            <View
-              {...resizeResponder.panHandlers}
-              style={{
-                position: 'absolute',
-                right: -10,
-                bottom: -10,
-                width: 30,
-                height: 30,
-                backgroundColor: '#eee',
-                borderRadius: 10,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-              <Icon
-                name="resize"
-                size={20}
-                style={{transform: [{rotate: '90deg'}]}}
-                color="black"
-              />
-            </View>
-          </>
+          <SelectionControls onDelete={handleDelete} resizeResponder={resizeResponder} />
         )}
       </Animated.View>
     );
   },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.text === nextProps.text &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isZoomed === nextProps.isZoomed &&
+      prevProps.animatedSize === nextProps.animatedSize &&
+      prevProps.panValues === nextProps.panValues &&
+      prevProps.onSelect === nextProps.onSelect &&
+      prevProps.onUpdate === nextProps.onUpdate &&
+      prevProps.onDelete === nextProps.onDelete
+    );
+  },
 );
+
+CustomText.displayName = 'CustomText';
 
 export default CustomText;

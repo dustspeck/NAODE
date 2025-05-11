@@ -9,13 +9,10 @@ interface ZoomOutIconProps {
 }
 
 const ZoomOutIcon: React.FC<ZoomOutIconProps> = ({isZoomed, setIsZoomed}) => {
-  const {width, height} = useWindowDimensions();
+  const {width} = useWindowDimensions();
   return (
     <View
       style={{
-        position: 'absolute',
-        top: height / 8,
-        left: 10,
         backgroundColor: '#3335',
         borderRadius: 999,
         zIndex: 1000,
