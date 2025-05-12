@@ -43,7 +43,6 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
     const initialDimensions = useRef({width: 0, height: 0});
     const initialPosition = useRef({x: 0, y: 0});
     const initialGesture = useRef({x: 0, y: 0});
-    const aspectRatio = useRef(1);
 
     useEffect(() => {
       isMounted.current = true;
@@ -67,7 +66,6 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
           if (!isMounted.current) return;
 
           const ratio = imgWidth / imgHeight;
-          aspectRatio.current = ratio;
           const initialWidth = Math.min(200, width * 0.8);
           const initialHeight = initialWidth / ratio;
           const centerX = width / 2 - initialWidth / 2;
@@ -84,9 +82,13 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
             onUpdate(image.id, {
               size: {width: initialWidth, height: initialHeight},
               position: {x: centerX, y: centerY},
+              aspectRatio: ratio,
             });
 
-            initialDimensions.current = {width: initialWidth, height: initialHeight};
+            initialDimensions.current = {
+              width: initialWidth,
+              height: initialHeight,
+            };
             initialPosition.current = {x: centerX, y: centerY};
             isInitialized.current = true;
           });
@@ -186,7 +188,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
             MIN_IMAGE_SIZE,
             initialDimensions.current.width + distance * Math.cos(direction),
           );
-          const newHeight = newWidth / aspectRatio.current;
+          const newHeight = newWidth / image.aspectRatio;
 
           // Calculate the new position to maintain the resize handle position
           const newX = initialPosition.current.x;

@@ -1,3 +1,5 @@
+import {ImageData, TextData} from '../types';
+
 export interface IOverlay {
   id: string;
   size: number;
@@ -19,3 +21,9 @@ export interface IParentBounds {
   x: number;
   y: number;
 }
+
+export interface IEditorStore {
+  elements: IElement[];
+}
+
+export type IElement = ImageData | TextData;

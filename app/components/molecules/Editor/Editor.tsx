@@ -14,6 +14,7 @@ import CustomText from '../Assets/CustomText';
 import {ImageData, TextData} from '../../../types';
 import Label from '../../atoms/Label';
 import ControlIcon from '../../atoms/ControlIcon';
+import {useEditorStore} from '../../../services/mmkv';
 
 interface EditorProps {
   animatedSize: Animated.Value;
@@ -126,10 +127,16 @@ const Editor: React.FC<EditorProps> = React.memo(
       handleUpdateImage,
       handleDeleteElement,
       handleUpdateText,
+      updateElements,
     } = useEditorContext();
     const {width, height} = useWindowDimensions();
+    const {store} = useEditorStore();
     const backHandlerRef = useRef<{remove: () => void} | null>(null);
     const [isDebugEnabled, setIsDebugEnabled] = useState(false);
+
+    useEffect(() => {
+      updateElements(store.elements);
+    }, []);
 
     // Clean up panValues when elements are deleted
     useEffect(() => {

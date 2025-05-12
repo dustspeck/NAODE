@@ -3,9 +3,14 @@ import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import IconPill from '../../atoms/IconPill';
 import Label from '../../atoms/Label';
 import {scale} from 'react-native-size-matters';
+import {useEditorContext} from '../../../context/EditorContext';
+import {useEditorStore} from '../../../services/mmkv';
 
 const EditorHeader: React.FC = () => {
   const {width, height} = useWindowDimensions();
+  const {elements} = useEditorContext();
+  const {setStore} = useEditorStore();
+
   return (
     <View
       style={{
@@ -24,7 +29,12 @@ const EditorHeader: React.FC = () => {
         style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}
       />
       <View style={{width: scale(50)}}>
-        <IconPill icon="checkmark" />
+        <IconPill
+          onPress={() => {
+            setStore({elements});
+          }}
+          icon="checkmark"
+        />
       </View>
     </View>
   );

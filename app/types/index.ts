@@ -3,6 +3,7 @@ export interface ImageData {
   uri: string;
   position: {x: number; y: number};
   size: {width: number; height: number};
+  aspectRatio: number;
   zIndex: number;
   rotation: number; // Rotation in degrees
   name: string;
@@ -29,6 +30,7 @@ export type ElementData = ImageData | TextData;
 
 export interface EditorContextType {
   elements: ElementData[];
+  updateElements: (elements: ElementData[]) => void;
   selectedElementId: string | null;
   setSelectedElementId: (id: string | null) => void;
   handleAddImage: (uri: string) => void;

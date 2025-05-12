@@ -1,11 +1,18 @@
 import {MMKVLoader, ProcessingModes} from 'react-native-mmkv-storage';
 import {useMMKVStorage} from 'react-native-mmkv-storage';
-import {IOverlay, IOverlayStore} from '../models/OverlayModel';
+import {IEditorStore, IOverlay, IOverlayStore} from '../models/OverlayModel';
 
-const MMKV = new MMKVLoader().withInstanceID('mmkv_id').setProcessingMode(ProcessingModes.MULTI_PROCESS).initialize();
+const MMKV = new MMKVLoader()
+  .withInstanceID('mmkv_id')
+  .setProcessingMode(ProcessingModes.MULTI_PROCESS)
+  .initialize();
 
 const defaultOverlayStore: IOverlayStore = {
   overlays: [],
+};
+
+const defaultEditorStore: IEditorStore = {
+  elements: [],
 };
 
 // Simple ID generation function
@@ -29,8 +36,12 @@ export const useOverlayStore = () => {
       size: 400,
     };
     const newOverlays = [...store.overlays, newOverlay];
-    const newStore = {...store, overlays: newOverlays, activeOverlayId: newOverlay.id};
-    console.log({newStore})
+    const newStore = {
+      ...store,
+      overlays: newOverlays,
+      activeOverlayId: newOverlay.id,
+    };
+    console.log({newStore});
     setStore(newStore);
   };
 
@@ -39,7 +50,7 @@ export const useOverlayStore = () => {
       overlay.id === id ? {...overlay, ...updates} : overlay,
     );
     const newStore = {...store, overlays: newOverlays, activeOverlayId: id};
-    console.log({newStore})
+    console.log({newStore});
     setStore(newStore);
   };
 
@@ -66,5 +77,18 @@ export const useOverlayStore = () => {
     updateOverlay,
     removeOverlay,
     setActiveOverlay,
+  };
+};
+
+export const useEditorStore = () => {
+  const [store, setStore] = useMMKVStorage<IEditorStore>(
+    'EDITOR_STORE',
+    MMKV,
+    defaultEditorStore,
+  );
+
+  return {
+    store,
+    setStore,
   };
 };

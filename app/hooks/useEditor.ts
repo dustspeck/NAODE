@@ -1,13 +1,16 @@
 import {useState, useCallback} from 'react';
 import {ElementData, ImageData, TextData} from '../types';
-import {DEFAULT_FONT_SIZE} from '../constants/ui';
-import { Animated } from 'react-native';
+import {DEFAULT_FONT_SIZE} from '../constants/ui'
 
 export const useEditor = () => {
   const [elements, setElements] = useState<ElementData[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(
     null,
   );
+
+  const updateElements = useCallback((elements: ElementData[]) => {
+    setElements(elements);
+  }, []);
 
   const handleAddImage = useCallback(
     (uri: string) => {
@@ -16,6 +19,7 @@ export const useEditor = () => {
         uri,
         position: {x: 0, y: 0},
         size: {width: 200, height: 200},
+        aspectRatio: 1,
         zIndex: elements.length,
         rotation: 0,
         name: `${elements.length + 1} Image`,
@@ -166,6 +170,7 @@ export const useEditor = () => {
 
   return {
     elements,
+    updateElements,
     selectedElementId,
     handleAddImage,
     handleUpdateImage,
