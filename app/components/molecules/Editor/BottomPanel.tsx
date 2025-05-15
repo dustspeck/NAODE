@@ -1,6 +1,13 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {Animated, TextInput, View, useWindowDimensions} from 'react-native';
-import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
+import {
+  Animated,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import {EDIT_CONTROLS_RATIO, FONTS} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
 import {useEditorContext} from '../../../context/EditorContext';
 import {scale} from 'react-native-size-matters';
@@ -32,6 +39,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const [isRadiusSelected, setIsRadiusSelected] = useState(false);
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false);
   const [isTextValueSelected, setIsTextValueSelected] = useState(false);
+  const [isFontSelected, setIsFontSelected] = useState(false);
 
   useEffect(() => {
     deselectAll();
@@ -46,6 +54,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     setIsLayerSelected(false);
     setIsCenterSelected(false);
     setIsRadiusSelected(false);
+    setIsFontSelected(false);
   };
 
   const handleSelectRotation = () => {
@@ -71,6 +80,11 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const handleSelectTextValue = () => {
     deselectAll();
     setIsTextValueSelected(!isTextValueSelected);
+  };
+
+  const handleSelectFont = () => {
+    deselectAll();
+    setIsFontSelected(!isFontSelected);
   };
 
   const handleCenterAlignHorizontal = () => {
@@ -206,6 +220,12 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     }
   };
 
+  const handleFontChange = (fontFamily: string) => {
+    if (selectedElementId) {
+      handleUpdateText(selectedElementId, {fontFamily});
+    }
+  };
+
   const ColorPickerContent = ({
     selectedElement,
   }: {
@@ -269,6 +289,59 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
       </View>
     );
   };
+
+  const FontPickerContent: React.FC<{
+    selectedElement: ElementData;
+  }> = ({selectedElement}) => {
+    return (
+      <View>
+        {selectedElement.type === 'text' && (
+          <ScrollView>
+            {FONTS.map(font => (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                key={font.fontFamily}
+                onPress={() => handleFontChange(font.fontFamily)}
+                style={{
+                  padding: scale(10),
+                  backgroundColor:
+                    selectedElement.fontFamily === font.fontFamily
+                      ? '#303030'
+                      : '#0a0a0a',
+                  borderRadius: scale(12),
+                  marginBottom: scale(10),
+                }}>
+                <View
+                  style={{
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    overflow: 'hidden',
+                  }}>
+                  <Label
+                    text={selectedElement.text}
+                    singleLine
+                    style={{
+                      fontFamily: font.fontFamily,
+                      fontSize: scale(10),
+                    }}
+                  />
+                  <Label
+                    text={font.name}
+                    style={{
+                      fontFamily: 'RobotoRegular',
+                      color: '#aaa',
+                      fontSize: scale(7),
+                    }}
+                  />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View
       style={{
@@ -287,7 +360,24 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             isVisible={isTextValueSelected}
             onBackPressed={() => setIsTextValueSelected(false)}
             heading="Edit Text"
-            content={() => <TextValueContent selectedElement={selectedElement} />}
+            content={() => (
+              <TextValueContent selectedElement={selectedElement} />
+            )}
+          />
+          <ModalWindow
+            isVisible={isFontSelected}
+            onBackPressed={() => setIsFontSelected(false)}
+            heading="Choose Font"
+            content={() => (
+              <FontPickerContent selectedElement={selectedElement} />
+            )}
+            footerContent={
+              <ActionButton
+                text="Done"
+                style={{alignSelf: 'flex-end'}}
+                onPress={() => setIsFontSelected(false)}
+              />
+            }
           />
 
           {isRotationSelected && (
@@ -435,10 +525,10 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                   style={{width: 1, height: '100%', backgroundColor: '#333'}}
                 />
                 <ControlIcon
-                  name="color-fill-outline"
-                  onPress={handleSelectColor}
-                  isSelected={isColorPickerVisible}
-                  label="Color"
+                  name="pencil-outline"
+                  onPress={handleSelectTextValue}
+                  isSelected={isTextValueSelected}
+                  label="Text"
                 />
               </>
             )}
@@ -448,10 +538,23 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                   style={{width: 1, height: '100%', backgroundColor: '#333'}}
                 />
                 <ControlIcon
-                  name="pencil-outline"
-                  onPress={handleSelectTextValue}
-                  isSelected={isTextValueSelected}
-                  label="Text"
+                  name="text"
+                  onPress={handleSelectFont}
+                  isSelected={isFontSelected}
+                  label="Font"
+                />
+              </>
+            )}
+            {selectedElement.type === 'text' && (
+              <>
+                <View
+                  style={{width: 1, height: '100%', backgroundColor: '#333'}}
+                />
+                <ControlIcon
+                  name="color-fill-outline"
+                  onPress={handleSelectColor}
+                  isSelected={isColorPickerVisible}
+                  label="Color"
                 />
               </>
             )}

@@ -1,0 +1,53 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "app/assets/fonts/ArchivoBlack.ttf",
+      "sha1": "5b6c44432da2e1330ad30153eddf98c739013b88"
+    },
+    {
+      "path": "app/assets/fonts/Codystar.ttf",
+      "sha1": "a58d65985382317f5ccf15787c69271470caa64b"
+    },
+    {
+      "path": "app/assets/fonts/Comfortaa.ttf",
+      "sha1": "fb5a258452921a7f710d1913777ae6f48a0b6089"
+    },
+    {
+      "path": "app/assets/fonts/DMSerifDisplay.ttf",
+      "sha1": "ebfa39e71429e48cb35906620f4c98cd69be925b"
+    },
+    {
+      "path": "app/assets/fonts/DancingScript.ttf",
+      "sha1": "80f13e7575ec59a51b7fdc42bb0b9d7a34439123"
+    },
+    {
+      "path": "app/assets/fonts/EduQLD.ttf",
+      "sha1": "b45081faec829077fa5c0020beca079ba272d8e9"
+    },
+    {
+      "path": "app/assets/fonts/Lobster.ttf",
+      "sha1": "120c751cd7a77174037c2409ab883ef7efc5edbb"
+    },
+    {
+      "path": "app/assets/fonts/Montserrat.ttf",
+      "sha1": "1c8119b38eef1914a4fbd9f6cfdedf198445ab97"
+    },
+    {
+      "path": "app/assets/fonts/Pacifico.ttf",
+      "sha1": "baca1fca7fe74b61cb33aa0da48ec1a3a77bcf49"
+    },
+    {
+      "path": "app/assets/fonts/PlaywriteDKLoopet.ttf",
+      "sha1": "0ef5a1effa11cf35689cbc688d344c168551b21c"
+    },
+    {
+      "path": "app/assets/fonts/RobotoRegular.ttf",
+      "sha1": "3bff51436aa7eb995d84cfc592cc63e1316bb400"
+    },
+    {
+      "path": "app/assets/fonts/RobotoSlab.ttf",
+      "sha1": "607b11807d40548c02c58df35567675ef3dfd2eb"
+    }
+  ]
+}

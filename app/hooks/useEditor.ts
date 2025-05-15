@@ -1,6 +1,6 @@
 import {useState, useCallback} from 'react';
 import {ElementData, ImageData, TextData} from '../types';
-import {DEFAULT_FONT_SIZE} from '../constants/ui'
+import {DEFAULT_FONT_SIZE} from '../constants/ui';
 
 export const useEditor = () => {
   const [elements, setElements] = useState<ElementData[]>([]);
@@ -40,7 +40,7 @@ export const useEditor = () => {
         size: {width: 200, height: 200},
         fontSize: DEFAULT_FONT_SIZE,
         fontWeight: 'normal' as 'normal' | 'bold',
-        fontFamily: 'Arial',
+        fontFamily: 'RobotoRegular',
         color: '#fff',
         zIndex: elements.length,
         rotation: 0,
