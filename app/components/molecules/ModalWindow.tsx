@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {IParentBounds} from '../../models/OverlayModel';
 import Label from '../atoms/Label';
-import { scale } from 'react-native-size-matters';
+import {scale} from 'react-native-size-matters';
 
 interface IModalProps {
   isVisible: boolean;
@@ -78,7 +78,7 @@ const ModalWindow: React.FC<IModalProps> = props => {
   useEffect(() => {
     const renderContent = async () => {
       if (!content) return;
-      
+
       try {
         const result = content({});
         if (result instanceof Promise) {
@@ -96,10 +96,20 @@ const ModalWindow: React.FC<IModalProps> = props => {
     renderContent();
   }, [content]);
 
+  const RenderHeaderContent = () => {
+    if (headerContent) {
+      return headerContent({});
+    }
+    return null;
+  };
+
   if (isLoading) return;
   if (!isVisibleInternal) return;
   return (
-    <Modal transparent={true} onRequestClose={onBackPressed} statusBarTranslucent>
+    <Modal
+      transparent={true}
+      onRequestClose={onBackPressed}
+      statusBarTranslucent>
       <View
         style={{
           flex: 1,
@@ -121,10 +131,10 @@ const ModalWindow: React.FC<IModalProps> = props => {
               width: '80%',
               backgroundColor: '#111',
               padding: scale(20),
-              paddingTop:scale(20),
+              paddingTop: scale(20),
               borderRadius: scale(15),
               maxHeight: 0.85 * height,
-              marginTop:StatusBar.currentHeight,
+              marginTop: StatusBar.currentHeight,
               transform: [
                 {scale: translation},
                 {translateX: fadeInOutX},
@@ -136,16 +146,25 @@ const ModalWindow: React.FC<IModalProps> = props => {
               style={{flexDirection: 'row', justifyContent: 'space-between'}}>
               <View>
                 <Label
-                  style={{fontWeight: '700', marginBottom: subHeading ? 0 : scale(20), fontSize:12}}
+                  style={{
+                    fontWeight: '700',
+                    marginBottom: subHeading ? 0 : scale(20),
+                    fontSize: 12,
+                  }}
                   text={heading}
                 />
                 {subHeading && (
                   <Label
-                    style={{color: '#888', marginBottom: scale(10), fontSize:10}}
+                    style={{
+                      color: '#888',
+                      marginBottom: scale(10),
+                      fontSize: 10,
+                    }}
                     text={subHeading}
                   />
                 )}
               </View>
+              <RenderHeaderContent />
             </View>
             <ScrollView
               showsVerticalScrollIndicator={false}

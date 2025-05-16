@@ -1,5 +1,11 @@
-import React, {useEffect, useRef} from 'react';
-import {SafeAreaView, View, StatusBar, Animated} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  SafeAreaView,
+  View,
+  StatusBar,
+  Animated,
+  NativeModules,
+} from 'react-native';
 import StatusBarView from './app/components/atoms/StatusBarView';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
 import EditorHeader from './app/components/molecules/Editor/Header';
@@ -15,6 +21,28 @@ function App(): React.JSX.Element {
   const [isZoomed, setIsZoomed] = React.useState(false);
   const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
   const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;
+
+  const {OverlayModule} = NativeModules;
+  const [hasPermission, setHasPermission] = useState(false);
+
+  const checkPermission = async () => {
+    const permission = await OverlayModule.checkAccessibilityPermission();
+    setHasPermission(permission);
+  };
+
+  const requestPermission = () => {
+    OverlayModule.requestAccessibilityPermission();
+  };
+
+  useEffect(() => {
+    checkPermission();
+  }, []);
+
+  useEffect(() => {
+    if (!hasPermission) {
+      requestPermission();
+    }
+  }, [hasPermission]);
 
   useEffect(() => {
     if (isZoomed) {

@@ -7,6 +7,9 @@ import {useEditorContext} from '../../../context/EditorContext';
 import {useEditorStore} from '../../../services/mmkv';
 import {debounce, isEqual} from '../../../utils/common';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import ModalWindow from '../ModalWindow';
+import ActionButton from '../../atoms/ActionButton';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const EditorHeader: React.FC = () => {
   const {width, height} = useWindowDimensions();
@@ -14,6 +17,7 @@ const EditorHeader: React.FC = () => {
   const {store, setStore} = useEditorStore();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSavingState, setIsSavingState] = useState(false);
+  const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
 
   const checkForChange = useMemo(
     () =>
@@ -27,9 +31,14 @@ const EditorHeader: React.FC = () => {
     [elements, store.elements],
   );
 
+  const handleSaveModal = () => {
+    setIsSaveModalVisible(!isSaveModalVisible);
+  };
+
   const saveChanges = useCallback(() => {
     setIsSavingState(true);
     setStore({elements});
+    setIsSaveModalVisible(false);
     setTimeout(() => {
       setIsSavingState(false);
     }, 1000);
@@ -58,12 +67,41 @@ const EditorHeader: React.FC = () => {
       />
       <View style={{width: scale(50)}}>
         <IconPill
-          onPress={saveChanges}
+          onPress={handleSaveModal}
           hasWarning={hasUnsavedChanges}
           disabled={isSavingState}
           icon={isSavingState ? 'hourglass-outline' : 'checkmark'}
         />
       </View>
+      <ModalWindow
+        content={() => (
+          <View style={{gap: scale(10), paddingHorizontal: scale(10)}}>
+            <Label
+              text="You have unsaved changes."
+              hasWarning={hasUnsavedChanges}
+            />
+            <ActionButton
+              text="Save AOD"
+              type="Secondary"
+              onPress={saveChanges}
+            />
+            <ActionButton text="Save & Apply AOD" onPress={saveChanges} />
+          </View>
+        )}
+        headerContent={() => (
+          <View style={{alignItems: 'flex-end'}}>
+            <Icon
+              name="close"
+              size={20}
+              color="white"
+              onPress={handleSaveModal}
+            />
+          </View>
+        )}
+        heading="Save or Apply?"
+        isVisible={isSaveModalVisible}
+        onBackPressed={() => {}}
+      />
     </View>
   );
 };
