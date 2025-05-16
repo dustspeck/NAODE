@@ -83,13 +83,22 @@ class OverlayAccessibilityService : AccessibilityService() {
             val elements = dataStore.getOverlayElements()
             val elementsArray = elements.getJSONArray("elements")
 
+            // Convert to list and sort by zIndex
+            val sortedElements = mutableListOf<JSONObject>()
             for (i in 0 until elementsArray.length()) {
-                val element = elementsArray.getJSONObject(i)
+                sortedElements.add(elementsArray.getJSONObject(i))
+            }
+            sortedElements.sortBy { it.optInt("zIndex", 0) }
+
+            // Add views in sorted order
+            for (element in sortedElements) {
                 val id = element.getString("id")
 
                 try {
                     val view = viewManager.createView(element)
                     val params = viewManager.createLayoutParams(element)
+                    // TODO: Remove this once we have a proper way to handle the width of the text
+                    if (element.getString("type") == "text") params.width += 30
                     viewManager.addView(view, params)
                     overlayViews[id] = view
                     Log.d(TAG, "Added overlay $id")

@@ -122,6 +122,9 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
     const lastUpdateTime = useRef(0);
     const resizeAnimationFrame = useRef<number | null>(null);
     const lastFontSize = useRef(text.fontSize);
+    const lastText = useRef(text.text);
+    const lastFontWeight = useRef(text.fontWeight);
+    const lastFontFamily = useRef(text.fontFamily);
     const lastDimensions = useRef({width: 0, height: 0});
 
     // Memoize the text style to prevent recreation on every render
@@ -135,7 +138,13 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
         fontWeight: text.fontWeight,
         fontFamily: text.fontFamily,
       }),
-      [animatedSize, text.fontSize, text.color, text.fontWeight, text.fontFamily],
+      [
+        animatedSize,
+        text.fontSize,
+        text.color,
+        text.fontWeight,
+        text.fontFamily,
+      ],
     );
 
     useEffect(() => {
@@ -160,28 +169,31 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
         if (!textRef.current) return;
 
         const measureAndInitialize = () => {
-          textRef.current?.measure((_x, _y, textWidth, textHeight, _pageX, _pageY) => {
-            if (!isMounted.current) return;
+          textRef.current?.measure(
+            (_x, _y, textWidth, textHeight, _pageX, _pageY) => {
+              if (!isMounted.current) return;
 
-            const centerX = width / 2 - textWidth / 2;
-            const centerY = height / 2 - textHeight / 2;
+              const centerX = width / 2 - textWidth / 2;
+              const centerY = height / 2 - textHeight / 2;
 
-            panValues[text.id].setValue({
-              x: centerX,
-              y: centerY,
-            });
+              panValues[text.id].setValue({
+                x: centerX,
+                y: centerY,
+              });
 
-            onUpdate(text.id, {
-              size: {width: textWidth, height: textHeight},
-              position: {x: centerX, y: centerY},
-            });
+              onUpdate(text.id, {
+                size: {width: textWidth, height: textHeight},
+                position: {x: centerX, y: centerY},
+              });
 
-            lastDimensions.current = {width: textWidth, height: textHeight};
-            isInitialized.current = true;
-          });
+              lastDimensions.current = {width: textWidth, height: textHeight};
+              isInitialized.current = true;
+            },
+          );
         };
 
-        resizeAnimationFrame.current = requestAnimationFrame(measureAndInitialize);
+        resizeAnimationFrame.current =
+          requestAnimationFrame(measureAndInitialize);
 
         return () => {
           if (resizeAnimationFrame.current) {
@@ -192,36 +204,47 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
     }, [text.id, width, height, onUpdate, panValues]);
 
     useEffect(() => {
-      if (!textRef.current || text.fontSize === lastFontSize.current) return;
+      if (
+        !textRef.current ||
+        (text.fontSize === lastFontSize.current &&
+          text.text === lastText.current &&
+          text.fontWeight === lastFontWeight.current &&
+          text.fontFamily === lastFontFamily.current)
+      )
+        return;
 
       const updateDimensions = () => {
-        textRef.current?.measure((_x, _y, textWidth, textHeight, _pageX, _pageY) => {
-          if (!isMounted.current) return;
+        textRef.current?.measure(
+          (_x, _y, textWidth, textHeight, _pageX, _pageY) => {
+            if (!isMounted.current) return;
 
-          const newWidth = textWidth * (1 / EDIT_WINDOW_RATIO);
-          const newHeight = textHeight * (1 / EDIT_WINDOW_RATIO);
+            const newWidth = textWidth * (1 / EDIT_WINDOW_RATIO);
+            const newHeight = textHeight * (1 / EDIT_WINDOW_RATIO);
 
-          if (
-            Math.abs(newWidth - lastDimensions.current.width) > 1 ||
-            Math.abs(newHeight - lastDimensions.current.height) > 1
-          ) {
-            lastDimensions.current = {width: newWidth, height: newHeight};
-            onUpdate(text.id, {
-              size: {width: newWidth, height: newHeight},
-            });
-          }
-        });
+            if (
+              Math.abs(newWidth - lastDimensions.current.width) > 1 ||
+              Math.abs(newHeight - lastDimensions.current.height) > 1
+            ) {
+              lastDimensions.current = {width: newWidth, height: newHeight};
+              onUpdate(text.id, {
+                size: {width: newWidth, height: newHeight},
+              });
+            }
+          },
+        );
       };
 
       resizeAnimationFrame.current = requestAnimationFrame(updateDimensions);
       lastFontSize.current = text.fontSize;
-
+      lastText.current = text.text;
+      lastFontWeight.current = text.fontWeight;
+      lastFontFamily.current = text.fontFamily;
       return () => {
         if (resizeAnimationFrame.current) {
           cancelAnimationFrame(resizeAnimationFrame.current);
         }
       };
-    }, [text.fontSize, text.id, onUpdate]);
+    }, [text.fontSize, text.id, text.text, onUpdate]);
 
     const handleDelete = useCallback(() => {
       Alert.alert('Delete Text', 'Are you sure you want to delete this text?', [
@@ -347,7 +370,10 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
           {text.text}
         </Animated.Text>
         {isSelected && !isZoomed && (
-          <SelectionControls onDelete={handleDelete} resizeResponder={resizeResponder} />
+          <SelectionControls
+            onDelete={handleDelete}
+            resizeResponder={resizeResponder}
+          />
         )}
       </Animated.View>
     );

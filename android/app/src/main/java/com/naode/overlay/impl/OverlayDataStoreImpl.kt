@@ -8,14 +8,14 @@ import android.util.Log
 
 class OverlayDataStoreImpl(context: Context) : OverlayDataStore {
     private val TAG = "OverlayDataStoreImpl"
-    private val MMKV_ID = "mmkv_id"
-    private val EDITOR_STORE_KEY = "EDITOR_STORE"
-    private val DEFAULT_STORE_JSON = "{\"elements\":[]}"
+    private val mmkvId = "mmkv_id"
+    private val editorStoreKey = "EDITOR_STORE"
+    private val defaultStoreJSONString = "{\"elements\":[]}"
     
     private val mmkv: MMKV by lazy {
         try {
             MMKV.initialize(context)
-            MMKV.mmkvWithID(MMKV_ID, MMKV.MULTI_PROCESS_MODE)
+            MMKV.mmkvWithID(mmkvId, MMKV.MULTI_PROCESS_MODE)
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing MMKV", e)
             throw e
@@ -24,17 +24,17 @@ class OverlayDataStoreImpl(context: Context) : OverlayDataStore {
 
     override fun getOverlayElements(): JSONObject {
         return try {
-            val storeJson = mmkv.getString(EDITOR_STORE_KEY, DEFAULT_STORE_JSON)
+            val storeJson = mmkv.getString(editorStoreKey, defaultStoreJSONString)
             JSONObject(storeJson)
         } catch (e: Exception) {
             Log.e(TAG, "Error getting overlay elements", e)
-            JSONObject(DEFAULT_STORE_JSON)
+            JSONObject(defaultStoreJSONString)
         }
     }
 
     override fun saveOverlayElements(elements: JSONObject) {
         try {
-            mmkv.putString(EDITOR_STORE_KEY, elements.toString())
+            mmkv.putString(editorStoreKey, elements.toString())
         } catch (e: Exception) {
             Log.e(TAG, "Error saving overlay elements", e)
             throw e
@@ -43,7 +43,7 @@ class OverlayDataStoreImpl(context: Context) : OverlayDataStore {
 
     override fun clearOverlayElements() {
         try {
-            mmkv.putString(EDITOR_STORE_KEY, DEFAULT_STORE_JSON)
+            mmkv.putString(editorStoreKey, defaultStoreJSONString)
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing overlay elements", e)
             throw e

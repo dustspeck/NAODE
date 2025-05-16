@@ -1,6 +1,7 @@
 package com.naode.overlay.impl
 
 import android.content.Context
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.util.DisplayMetrics
@@ -14,6 +15,8 @@ import org.json.JSONObject
 import android.util.Log
 import android.view.View
 import androidx.core.net.toUri
+import androidx.core.graphics.toColorInt
+import com.google.android.material.imageview.ShapeableImageView
 
 class OverlayViewManagerImpl(
     private val context: Context,
@@ -56,20 +59,55 @@ class OverlayViewManagerImpl(
         return TextView(context).apply {
             text = element.getString("text")
             textSize = element.getDouble("fontSize").toFloat()
-            typeface = when (element.getString("fontWeight")) {
-                "bold" -> Typeface.create(element.getString("fontFamily"), Typeface.BOLD)
-                else -> Typeface.create(element.getString("fontFamily"), Typeface.NORMAL)
+            try {
+                val fontFamily = element.getString("fontFamily")
+                val typeface = Typeface.createFromAsset(context.assets, "fonts/$fontFamily.ttf")
+                setTypeface(typeface, when (element.getString("fontWeight")) {
+                    "bold" -> Typeface.BOLD
+                    else -> Typeface.NORMAL
+                })
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading font: ${element.getString("fontFamily")}", e)
+                // Fallback to default font if custom font loading fails
+                typeface = when (element.getString("fontWeight")) {
+                    "bold" -> Typeface.DEFAULT_BOLD
+                    else -> Typeface.DEFAULT
+                }
+            }
+            try {
+                val color = element.getString("color").toColorInt()
+                setTextColor(color)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing color: ${element.getString("color")}", e)
+                setTextColor(Color.WHITE)
             }
             rotation = element.optDouble("rotation", 0.0).toFloat()
+            Log.d(TAG, "Rotation: ${element.optDouble("rotation", 0.0)}")
         }
     }
 
     private fun createImageView(element: JSONObject): ImageView {
-        return ImageView(context).apply {
+        return ShapeableImageView(context).apply {
             try {
                 setImageURI(element.getString("uri").toUri())
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 rotation = element.optDouble("rotation", 0.0).toFloat()
+                
+                // Calculate corner radius based on the smaller dimension
+                val size = element.getJSONObject("size")
+                val width = size.getDouble("width")
+                val height = size.getDouble("height")
+                val borderRadius = element.optDouble("borderRadius", 0.0)
+                val radius = if (width > height) {
+                    (height * dP / 100) * borderRadius
+                } else {
+                    (width * dP/ 100) * borderRadius
+                }
+                
+                // Apply corner radius
+                shapeAppearanceModel = shapeAppearanceModel.toBuilder()
+                    .setAllCornerSizes(radius.toFloat())
+                    .build()
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading image: ${element.getString("uri")}", e)
                 setImageResource(R.drawable.overlay_image)
