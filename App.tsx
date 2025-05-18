@@ -1,111 +1,24 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {
-  SafeAreaView,
-  View,
-  StatusBar,
-  Animated,
-  NativeModules,
-} from 'react-native';
-import StatusBarView from './app/components/atoms/StatusBarView';
-import SystemNavigationBar from 'react-native-system-navigation-bar';
-import EditorHeader from './app/components/molecules/Editor/Header';
-import {EDIT_WINDOW_RATIO} from './app/constants/ui';
-import RightPanel from './app/components/molecules/Editor/RightPanel';
-import LeftPanel from './app/components/molecules/Editor/LeftPanel';
-import BottomPanel from './app/components/molecules/Editor/BottomPanel';
-import Editor from './app/components/molecules/Editor/Editor';
-import {EditorProvider} from './app/context/EditorContext';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import React from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import HomeScreen from './app/screens/HomeScreen';
+import EditorScreen from './app/screens/EditorScreen';
+
+const Stack = createNativeStackNavigator();
 
 function App(): React.JSX.Element {
-  const [isZoomed, setIsZoomed] = React.useState(false);
-  const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
-  const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;
-
-  const {OverlayModule} = NativeModules;
-  const [hasPermission, setHasPermission] = useState(false);
-
-  const checkPermission = async () => {
-    const permission = await OverlayModule.checkAccessibilityPermission();
-    setHasPermission(permission);
-  };
-
-  const requestPermission = () => {
-    OverlayModule.requestAccessibilityPermission();
-  };
-
-  useEffect(() => {
-    checkPermission();
-  }, []);
-
-  useEffect(() => {
-    if (!hasPermission) {
-      requestPermission();
-    }
-  }, [hasPermission]);
-
-  useEffect(() => {
-    if (isZoomed) {
-      SystemNavigationBar.immersive();
-      StatusBar.setHidden(true);
-      Animated.spring(animatedSize, {
-        toValue: 1,
-        useNativeDriver: false,
-        friction: 8,
-        tension: 80,
-      }).start();
-    } else {
-      SystemNavigationBar.navigationShow();
-      StatusBar.setHidden(false);
-      Animated.spring(animatedSize, {
-        toValue: EDIT_WINDOW_RATIO,
-        useNativeDriver: false,
-        friction: 8,
-        tension: 80,
-      }).start();
-    }
-  }, [isZoomed]);
-
   return (
-    <GestureHandlerRootView style={{flex: 1}}>
-      <EditorProvider>
-        <SafeAreaView style={{flex: 1}}>
-          <StatusBar barStyle={'light-content'} />
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: 'black',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            {!isZoomed && (
-              <>
-                <StatusBarView color="black" />
-                <EditorHeader />
-              </>
-            )}
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              {!isZoomed && (
-                <LeftPanel
-                  animatedSize={animatedSize}
-                  isZoomed={isZoomed}
-                  setIsZoomed={setIsZoomed}
-                />
-              )}
-              <Editor
-                animatedSize={animatedSize}
-                isZoomed={isZoomed}
-                setIsZoomed={setIsZoomed}
-                panValues={panValues}
-              />
-              {!isZoomed && <RightPanel animatedSize={animatedSize} />}
-            </View>
-
-            {!isZoomed && <BottomPanel panValues={panValues} />}
-          </View>
-        </SafeAreaView>
-      </EditorProvider>
-    </GestureHandlerRootView>
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerShown: false,
+          contentStyle: {backgroundColor: 'black'},
+        }}>
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Editor" component={EditorScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
