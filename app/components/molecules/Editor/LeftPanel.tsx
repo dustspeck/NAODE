@@ -13,6 +13,7 @@ import {useEffect, useState} from 'react';
 import LeftPanelOverhead from '../../atoms/LeftPanelOverhead';
 import Label from '../../atoms/Label';
 import {useEditorContext} from '../../../context/EditorContext';
+import {ElementData} from '../../../types';
 
 interface LeftPanelProps {
   animatedSize: Animated.Value;
@@ -27,6 +28,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
 }) => {
   const {width, height} = useWindowDimensions();
   const [isLayersSelected, setIsLayersSelected] = useState(false);
+  const [sortedElements, setSortedElements] = useState<ElementData[]>([]);
   const {
     elements,
     selectedElementId,
@@ -39,6 +41,12 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
       setIsLayersSelected(false);
     }
   }, [selectedElementId]);
+
+  useEffect(() => {
+    // sort elements by zIndex
+    const sortedElements = elements.sort((a, b) => b.zIndex - a.zIndex);
+    setSortedElements(sortedElements);
+  }, [elements]);
 
   const handleLayersPress = () => {
     if (isLayersSelected) {
@@ -70,7 +78,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
             {elements.length === 0 && (
               <Label text="No items added" style={{color: '#555'}} />
             )}
-            {elements.map(element => (
+            {sortedElements.map(element => (
               <TouchableOpacity
                 key={element.id}
                 activeOpacity={0.8}
