@@ -10,9 +10,11 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import ModalWindow from '../ModalWindow';
 import ActionButton from '../../atoms/ActionButton';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 
 const EditorHeader: React.FC = () => {
   const {width, height} = useWindowDimensions();
+  const navigation = useNavigation();
   const {elements} = useEditorContext();
   const {store, setStore} = useEditorStore();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -48,6 +50,10 @@ const EditorHeader: React.FC = () => {
     checkForChange();
   }, [elements, store.elements]);
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
   return (
     <View
       style={{
@@ -59,7 +65,7 @@ const EditorHeader: React.FC = () => {
         paddingHorizontal: scale(10),
       }}>
       <View style={{width: scale(50)}}>
-        <IconPill icon="chevron-back" />
+        <IconPill icon="chevron-back" onPress={handleBack} />
       </View>
       <Label
         text="NAODE"

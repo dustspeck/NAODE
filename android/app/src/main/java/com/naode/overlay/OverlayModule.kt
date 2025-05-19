@@ -1,11 +1,13 @@
 package com.naode.overlay
 
-import android.content.Intent
-import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import com.facebook.react.bridge.*
+import com.naode.utils.CommonUtil
 
 class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+    private val context: ReactApplicationContext = reactContext
+
     companion object {
         private const val TAG = "OverlayModule"
     }
@@ -15,17 +17,14 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
     }
 
     @ReactMethod
-    fun checkAccessibilityPermission(promise: Promise) {
-        val accessibilityEnabled = isAccessibilityServiceEnabled()
-        Log.d(TAG, "Checking accessibility service: $accessibilityEnabled")
-        promise.resolve(accessibilityEnabled)
+    fun checkAccessibilityPermission(promise: Promise){
+        promise.resolve(CommonUtil.checkAccessibilityPermission(context))
     }
 
     @ReactMethod
-    fun requestAccessibilityPermission() {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        reactApplicationContext.startActivity(intent)
+    fun requestAccessibilityPermission(promise: Promise){
+        CommonUtil.requestAccessibilityPermission(context)
+        Toast.makeText(reactApplicationContext, "Please grant accessibility permission", Toast.LENGTH_SHORT).show()
     }
 
     @ReactMethod
@@ -39,23 +38,5 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
             Log.e(TAG, "Error updating overlay", e)
             promise.reject("ERROR", e.message)
         }
-    }
-
-    private fun isAccessibilityServiceEnabled(): Boolean {
-        val accessibilityEnabled = Settings.Secure.getInt(
-            reactApplicationContext.contentResolver,
-            Settings.Secure.ACCESSIBILITY_ENABLED,
-            0
-        )
-
-        if (accessibilityEnabled == 1) {
-            val serviceString = Settings.Secure.getString(
-                reactApplicationContext.contentResolver,
-                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-            )
-            Log.d(TAG, "Service string: $serviceString")
-            return serviceString?.contains("${reactApplicationContext.packageName}/${reactApplicationContext.packageName}.overlay.OverlayAccessibilityService") == true
-        }
-        return false
     }
 } 

@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import PermissionStatus from '../components/molecules/PermissionsStatus';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -9,7 +10,8 @@ type HomeScreenProps = {
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>NAODE Editor</Text>
+      <Text style={styles.title}>NAODE</Text>
+      <PermissionStatus />
       <TouchableOpacity
         style={styles.editButton}
         onPress={() => navigation.navigate('Editor')}>
@@ -44,4 +46,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen; 
+export default HomeScreen;
