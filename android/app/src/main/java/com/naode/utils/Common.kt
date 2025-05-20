@@ -2,6 +2,9 @@ package com.naode.utils
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
@@ -73,5 +76,14 @@ object CommonUtil {
                 Log.e("CommonUtil", "Error opening settings: ${e.message}")
             }
         }
+    }
+
+    fun triggerTickHaptic(context: Context) {
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else vibrator.vibrate(20)
     }
 }

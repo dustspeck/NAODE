@@ -80,7 +80,7 @@ function PermissionStatus(): React.JSX.Element | null {
   const AllPermissionsStatus: React.FC<IAllPermissionsStatusProps> = props => {
     const {isLoading} = props;
     return (
-      <View style={{marginHorizontal: scale(15), marginVertical: scale(5)}}>
+      <View style={{marginVertical: scale(15)}}>
         <View style={{flexDirection: 'row', alignContent: 'center'}}>
           <Icon
             name={isLoading ? 'time-outline' : 'checkmark-done'}

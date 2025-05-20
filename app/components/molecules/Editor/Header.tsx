@@ -10,12 +10,16 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import ModalWindow from '../ModalWindow';
 import ActionButton from '../../atoms/ActionButton';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
-const EditorHeader: React.FC = () => {
+interface IHeaderProps {
+  saveImage: () => void;
+}
+
+const EditorHeader: React.FC<IHeaderProps> = ({saveImage}) => {
   const {width, height} = useWindowDimensions();
   const navigation = useNavigation();
-  const {elements} = useEditorContext();
+  const {elements, setSelectedElementId} = useEditorContext();
   const {store, setStore} = useEditorStore();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSavingState, setIsSavingState] = useState(false);
@@ -38,13 +42,15 @@ const EditorHeader: React.FC = () => {
   };
 
   const saveChanges = useCallback(() => {
+    setSelectedElementId(null);
     setIsSavingState(true);
     setStore({elements});
+    saveImage();
     setIsSaveModalVisible(false);
     setTimeout(() => {
       setIsSavingState(false);
     }, 1000);
-  }, [elements, setStore]);
+  }, [elements, setStore, saveImage]);
 
   useEffect(() => {
     checkForChange();

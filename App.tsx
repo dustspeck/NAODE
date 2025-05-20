@@ -14,6 +14,7 @@ function App(): React.JSX.Element {
         screenOptions={{
           headerShown: false,
           contentStyle: {backgroundColor: 'black'},
+          animation: 'slide_from_bottom',
         }}>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Editor" component={EditorScreen} />

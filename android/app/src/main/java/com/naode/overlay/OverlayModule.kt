@@ -39,4 +39,9 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
             promise.reject("ERROR", e.message)
         }
     }
+
+    @ReactMethod
+    fun triggerTickHaptic(){
+        CommonUtil.triggerTickHaptic(reactApplicationContext)
+    }
 } 

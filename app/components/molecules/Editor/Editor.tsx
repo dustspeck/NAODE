@@ -21,6 +21,7 @@ interface EditorProps {
   isZoomed: boolean;
   setIsZoomed: (isZoomed: boolean) => void;
   panValues: {[key: string]: Animated.ValueXY};
+  editorBorderWidth: number;
 }
 
 // Separate component for zoom control to prevent unnecessary re-renders
@@ -119,7 +120,7 @@ const ElementRenderer = React.memo(
 ElementRenderer.displayName = 'ElementRenderer';
 
 const Editor: React.FC<EditorProps> = React.memo(
-  ({animatedSize, isZoomed, setIsZoomed, panValues}) => {
+  ({animatedSize, isZoomed, setIsZoomed, panValues, editorBorderWidth}) => {
     const {
       elements,
       selectedElementId,
@@ -187,13 +188,13 @@ const Editor: React.FC<EditorProps> = React.memo(
         }),
         backgroundColor: 'black',
         borderRadius: 10,
-        borderWidth: isZoomed ? 0 : 1,
+        borderWidth: isZoomed ? 0 : editorBorderWidth,
         borderColor: '#555',
         justifyContent: 'space-between',
         alignItems: 'center' as const,
         overflow: 'hidden',
       }),
-      [animatedSize, width, height, isZoomed],
+      [animatedSize, width, height, isZoomed, editorBorderWidth],
     );
 
     const handlePress = useCallback(() => {
@@ -273,7 +274,8 @@ const Editor: React.FC<EditorProps> = React.memo(
       prevProps.animatedSize === nextProps.animatedSize &&
       prevProps.isZoomed === nextProps.isZoomed &&
       prevProps.setIsZoomed === nextProps.setIsZoomed &&
-      prevProps.panValues === nextProps.panValues
+      prevProps.panValues === nextProps.panValues &&
+      prevProps.editorBorderWidth === nextProps.editorBorderWidth
     );
   },
 );

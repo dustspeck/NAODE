@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {SafeAreaView, View, StatusBar, Animated} from 'react-native';
+import {View, StatusBar, Animated} from 'react-native';
 import StatusBarView from '../components/atoms/StatusBarView';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
 import EditorHeader from '../components/molecules/Editor/Header';
@@ -10,11 +10,13 @@ import BottomPanel from '../components/molecules/Editor/BottomPanel';
 import Editor from '../components/molecules/Editor/Editor';
 import {EditorProvider} from '../context/EditorContext';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-
+import {captureRef} from 'react-native-view-shot';
 const EditorScreen: React.FC = () => {
   const [isZoomed, setIsZoomed] = React.useState(false);
+  const [editorBorderWidth, setEditorBorderWidth] = React.useState(1);
   const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
   const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;
+  const ref = useRef<View>(null);
 
   useEffect(() => {
     if (isZoomed) {
@@ -38,44 +40,62 @@ const EditorScreen: React.FC = () => {
     }
   }, [isZoomed]);
 
+  const saveEditorImage = () => {
+    setEditorBorderWidth(0);
+    setTimeout(() => {
+      captureRef(ref, {
+        format: 'jpg',
+        quality: 0.8,
+      })
+        .then(
+          uri => console.log('Image saved to', uri),
+          error => console.error('Oops, snapshot failed', error),
+        )
+        .finally(() => {
+          setEditorBorderWidth(1);
+        });
+    }, 100);
+  };
+
   return (
     <GestureHandlerRootView style={{flex: 1}}>
       <EditorProvider>
-        <SafeAreaView style={{flex: 1}}>
-          <StatusBar barStyle={'light-content'} />
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: 'black',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
+        <StatusBar barStyle={'light-content'} />
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'black',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          {!isZoomed && (
+            <>
+              <StatusBarView color="black" />
+              <EditorHeader saveImage={saveEditorImage} />
+            </>
+          )}
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
             {!isZoomed && (
-              <>
-                <StatusBarView color="black" />
-                <EditorHeader />
-              </>
+              <LeftPanel
+                animatedSize={animatedSize}
+                isZoomed={isZoomed}
+                setIsZoomed={setIsZoomed}
+              />
             )}
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              {!isZoomed && (
-                <LeftPanel
-                  animatedSize={animatedSize}
-                  isZoomed={isZoomed}
-                  setIsZoomed={setIsZoomed}
-                />
-              )}
+            <View ref={ref} collapsable={false}>
               <Editor
                 animatedSize={animatedSize}
                 isZoomed={isZoomed}
                 setIsZoomed={setIsZoomed}
                 panValues={panValues}
+                editorBorderWidth={editorBorderWidth}
               />
-              {!isZoomed && <RightPanel animatedSize={animatedSize} />}
             </View>
-
-            {!isZoomed && <BottomPanel panValues={panValues} />}
+            {!isZoomed && <RightPanel animatedSize={animatedSize} />}
           </View>
-        </SafeAreaView>
+
+          {!isZoomed && <BottomPanel panValues={panValues} />}
+        </View>
       </EditorProvider>
     </GestureHandlerRootView>
   );
