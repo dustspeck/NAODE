@@ -69,7 +69,7 @@ const RightPanel: React.FC<RightPanelProps> = ({animatedSize}) => {
             outputRange: [0, height],
           }),
           alignItems: 'center',
-          gap: scale(10),
+          gap: scale(12),
         }}>
           {isAddSelected && (
             <RightPanelOverhead>

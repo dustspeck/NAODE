@@ -15,6 +15,11 @@ import {ImageData, TextData} from '../../../types';
 import Label from '../../atoms/Label';
 import ControlIcon from '../../atoms/ControlIcon';
 import {useEditorStore} from '../../../services/mmkv';
+import {scale} from 'react-native-size-matters';
+import LockScreenIcon from '../../atoms/LockScreenIcon';
+import {NativeModules} from 'react-native';
+
+const {OverlayModule} = NativeModules;
 
 interface EditorProps {
   animatedSize: Animated.Value;
@@ -24,33 +29,33 @@ interface EditorProps {
   editorBorderWidth: number;
 }
 
-// Separate component for zoom control to prevent unnecessary re-renders
-const ZoomControl = React.memo(
-  ({
-    isZoomed,
-    setIsZoomed,
-  }: {
-    isZoomed: boolean;
-    setIsZoomed: (isZoomed: boolean) => void;
-  }) => {
-    const {height} = useWindowDimensions();
-    if (!isZoomed) return null;
-
-    return (
-      <View
-        style={{
-          position: 'absolute',
-          top: height / 8,
-          left: 10,
-          zIndex: 1000,
-        }}>
-        <ZoomOutIcon isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
-      </View>
-    );
-  },
-);
-
-ZoomControl.displayName = 'ZoomControl';
+const FullScreenControls = ({
+  isZoomed,
+  setIsZoomed,
+}: {
+  isZoomed: boolean;
+  setIsZoomed: (isZoomed: boolean) => void;
+}) => {
+  const {height} = useWindowDimensions();
+  if (!isZoomed) return null;
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        top: height / 8,
+        left: 10,
+        zIndex: 1000,
+        gap: scale(20),
+      }}>
+      <ZoomOutIcon isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
+      <LockScreenIcon
+        onPress={() => {
+          OverlayModule.lockScreen();
+        }}
+      />
+    </View>
+  );
+};
 
 // Separate component for element rendering to prevent unnecessary re-renders
 const ElementRenderer = React.memo(
@@ -264,7 +269,7 @@ const Editor: React.FC<EditorProps> = React.memo(
               onDelete={elementHandlers.onDelete}
             />
           ))}
-          <ZoomControl isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
+          <FullScreenControls isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
         </Animated.View>
       </TouchableWithoutFeedback>
     );

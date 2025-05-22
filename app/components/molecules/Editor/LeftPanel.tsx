@@ -16,6 +16,9 @@ import {useEditorContext} from '../../../context/EditorContext';
 import {ElementData} from '../../../types';
 import ModalWindow from '../ModalWindow';
 import ActionButton from '../../atoms/ActionButton';
+import {NativeModules} from 'react-native';
+
+const {OverlayModule} = NativeModules;
 
 interface LeftPanelProps {
   animatedSize: Animated.Value;
@@ -61,6 +64,10 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
     }
   };
 
+  const onLockPress = () => {
+    OverlayModule.lockScreen();
+  };
+
   const DeleteModal = useCallback(
     ({id}: {id: string}) => {
       return (
@@ -98,10 +105,6 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
     },
     [handleDeleteElement, isDeleting],
   );
-
-  // const handleDeletePress = (id: string) => {
-  //   setIsDeleting(true);
-  // };
 
   return (
     <View>
@@ -169,12 +172,17 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
             outputRange: [0, height],
           }),
           alignItems: 'center',
-          gap: scale(10),
+          gap: scale(15),
         }}>
         <ControlIcon
           name="expand"
           onPress={() => setIsZoomed(!isZoomed)}
           label="Full screen"
+        />
+        <ControlIcon
+          name="lock-closed-outline"
+          onPress={onLockPress}
+          label="Lock screen"
         />
         <ControlIcon
           name="layers-outline"
