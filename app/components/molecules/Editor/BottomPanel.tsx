@@ -2,7 +2,6 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {
   Animated,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
@@ -18,6 +17,7 @@ import ActionButton from '../../atoms/ActionButton';
 import ModalWindow from '../ModalWindow';
 import {ElementData} from '../../../types';
 import ColorWheel from '../ColorWheel';
+import TextBox from '../../atoms/TextBox';
 
 interface BottomPanelProps {
   panValues: {[key: string]: Animated.ValueXY};
@@ -265,8 +265,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
       <View>
         {selectedElement.type === 'text' && (
           <View style={{flex: 1}}>
-            <TextInput
-              multiline
+            <TextBox
               value={text}
               style={{
                 backgroundColor: '#0a0a0a',

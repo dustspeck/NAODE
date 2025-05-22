@@ -1,13 +1,14 @@
-import {Image, NativeModules, StyleSheet, View, useWindowDimensions} from 'react-native';
+import {Image, StyleSheet, View, useWindowDimensions} from 'react-native';
 import Label from '../atoms/Label';
 import {PREVIEW_IMAGE_RATIO} from '../../constants/ui';
 import {scale} from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useEffect, useState } from 'react';
-import { useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
-import { useEditorStore } from '../../services/mmkv';
+import {useEffect, useState} from 'react';
+import {useCallback} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
+import {useEditorStore} from '../../services/mmkv';
 import RNFS from 'react-native-fs';
+
 interface IPreview {
   heading: string;
 }
@@ -15,7 +16,6 @@ interface IPreview {
 const Preview = ({heading}: IPreview) => {
   const {height, width} = useWindowDimensions();
   const {store} = useEditorStore();
-  const {OverlayModule} = NativeModules;
   const previewPath = `${RNFS.DocumentDirectoryPath}/aod/aodpreview.jpg`;
   const [previewExists, setPreviewExists] = useState(false);
   const [imageKey, setImageKey] = useState(Date.now());
@@ -49,7 +49,7 @@ const Preview = ({heading}: IPreview) => {
   );
   return (
     <View style={styles.bodyContainer}>
-      <Label text={heading} style={{fontSize: 12}} />
+      <Label text={heading} style={{fontSize: 12, color: '#ccc'}} />
       <View
         style={[
           styles.previewContainer,
@@ -91,7 +91,8 @@ const styles = StyleSheet.create({
   previewContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: scale(20),
+    marginBottom: scale(20),
+    marginTop: scale(10),
     borderWidth: 1,
     borderColor: '#eee5',
     borderRadius: scale(10),

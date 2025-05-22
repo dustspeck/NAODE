@@ -12,13 +12,22 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {captureRef} from 'react-native-view-shot';
 import RNFS from 'react-native-fs';
 
-const EditorScreen: React.FC = () => {
+interface IEditorScreenProps {
+  route: {
+    params: {
+      screenIndex: number;
+    };
+  };
+}
+
+const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
   const [isZoomed, setIsZoomed] = React.useState(false);
   const [editorBorderWidth, setEditorBorderWidth] = React.useState(1);
   const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
   const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;
   const ref = useRef<View>(null);
   const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+  const screenIndex = route?.params?.screenIndex ?? 0;
 
   useEffect(() => {
     if (isZoomed) {
@@ -88,42 +97,45 @@ const EditorScreen: React.FC = () => {
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>
-        <StatusBar barStyle={'light-content'} />
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'black',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+      <StatusBar barStyle={'light-content'} />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'black',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        {!isZoomed && (
+          <>
+            <StatusBarView color="black" />
+            <EditorHeader
+              saveImage={saveEditorImage}
+              screenIndex={screenIndex}
+            />
+          </>
+        )}
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
           {!isZoomed && (
-            <>
-              <StatusBarView color="black" />
-              <EditorHeader saveImage={saveEditorImage} />
-            </>
+            <LeftPanel
+              animatedSize={animatedSize}
+              isZoomed={isZoomed}
+              setIsZoomed={setIsZoomed}
+            />
           )}
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            {!isZoomed && (
-              <LeftPanel
-                animatedSize={animatedSize}
-                isZoomed={isZoomed}
-                setIsZoomed={setIsZoomed}
-              />
-            )}
-            <View ref={ref} collapsable={false}>
-              <Editor
-                animatedSize={animatedSize}
-                isZoomed={isZoomed}
-                setIsZoomed={setIsZoomed}
-                panValues={panValues}
-                editorBorderWidth={editorBorderWidth}
-              />
-            </View>
-            {!isZoomed && <RightPanel animatedSize={animatedSize} />}
+          <View ref={ref} collapsable={false}>
+            <Editor
+              animatedSize={animatedSize}
+              isZoomed={isZoomed}
+              setIsZoomed={setIsZoomed}
+              panValues={panValues}
+              editorBorderWidth={editorBorderWidth}
+            />
           </View>
-
-          {!isZoomed && <BottomPanel panValues={panValues} />}
+          {!isZoomed && <RightPanel animatedSize={animatedSize} />}
         </View>
+
+        {!isZoomed && <BottomPanel panValues={panValues} />}
+      </View>
     </GestureHandlerRootView>
   );
 };

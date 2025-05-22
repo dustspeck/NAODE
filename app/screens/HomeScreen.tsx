@@ -16,21 +16,22 @@ import {FlatList} from 'react-native';
 import FabButton from '../components/atoms/FabButton';
 import PageIndicator from '../components/atoms/PageIndicator';
 import Preview from '../components/molecules/Preview';
+import {useScreensStore} from '../services/mmkv';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
+  const {screens} = useScreensStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const {OverlayModule} = NativeModules;
 
   const handleEditPress = () => {
-    navigation.navigate('Editor');
+    navigation.navigate('Editor', {screenIndex: selectedIndex});
   };
 
   const handleLockPress = () => {
-    console.log('lock screen');
     OverlayModule.lockScreen();
   };
 
@@ -40,30 +41,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
     setSelectedIndex(index);
   };
 
-  const data = [
-    {
-      heading: 'Custom',
-    },
-    {
-      heading: 'Water',
-    },
-    {
-      heading: 'Earth',
-    },
-    {
-      heading: 'Fire',
-    },
-    {
-      heading: 'Air',
-    },
-  ];
-
   return (
     <View style={styles.mainContainer}>
       <StatusBarView color="black" />
       <View style={styles.headerContainer}>
         <View style={{flex: 1}}>
-          <Label text="NAODE" style={{fontSize: 24, fontWeight: 'bold'}} />
+          <Label text="NAODE" style={styles.heading} />
         </View>
         <View style={{width: scale(50)}}>
           <Toggle
@@ -77,8 +60,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
       <PermissionStatus />
 
       <FlatList
-        data={data}
-        renderItem={({item}) => <Preview heading={item.heading} />}
+        data={screens.screens}
+        keyExtractor={item => item.id}
+        renderItem={({item}) => <Preview heading={item.name} />}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{alignSelf: 'flex-start'}}
@@ -100,7 +84,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
         </View>
         <FabButton icon="brush" onPress={handleEditPress} />
       </View>
-      <PageIndicator selectedIndex={selectedIndex} dataLength={data.length} />
+      <PageIndicator
+        selectedIndex={selectedIndex}
+        dataLength={screens.screens.length}
+      />
     </View>
   );
 };
@@ -120,6 +107,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignContent: 'center',
     alignSelf: 'center',
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   fabContainer: {
     position: 'absolute',

@@ -11,16 +11,19 @@ const getPageIndicatorColor = (
   selectedIndex: number,
   dataLength: number,
 ) => {
-  switch (index) {
-    case 0:
-      return selectedIndex === 0 ? '#aaa' : '#555';
-    case 2:
-      return selectedIndex === dataLength - 1 ? '#aaa' : '#555';
-    default:
-      return selectedIndex > 0 && selectedIndex < dataLength - 1
-        ? '#aaa'
-        : '#555';
+  const isSelected = (i: number) => i === selectedIndex;
+  const activeColor = '#aaa';
+  const inactiveColor = '#555';
+  if (dataLength === 1) return activeColor;
+  if (dataLength === 2) {
+    return isSelected(index) ? activeColor : inactiveColor;
   }
+  if (index === 0) return isSelected(0) ? activeColor : inactiveColor;
+  if (index === 2)
+    return isSelected(dataLength - 1) ? activeColor : inactiveColor;
+  return selectedIndex > 0 && selectedIndex < dataLength - 1
+    ? activeColor
+    : inactiveColor;
 };
 
 const Indicator = ({
@@ -30,10 +33,11 @@ const Indicator = ({
   selectedIndex: number;
   dataLength: number;
 }) => {
+  const length = dataLength > 3 ? 3 : dataLength;
   return (
     <View style={styles.pageIndicator}>
       <View style={{flexDirection: 'row', gap: scale(6)}}>
-        {Array.from({length: 3}).map((_, index) => (
+        {Array.from({length}).map((_, index) => (
           <View
             key={index}
             style={{
