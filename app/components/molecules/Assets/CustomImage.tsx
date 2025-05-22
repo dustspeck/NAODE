@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useCallback, useRef} from 'react';
+import React, {useEffect, useMemo, useCallback, useRef, useState} from 'react';
 import {
   Animated,
   PanResponder,
@@ -6,12 +6,15 @@ import {
   Image,
   useWindowDimensions,
   TouchableOpacity,
-  Alert,
   ViewStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {ImageData} from '../../../types';
 import {MIN_IMAGE_SIZE} from '../../../constants/ui';
+import ModalWindow from '../ModalWindow';
+import ActionButton from '../../atoms/ActionButton';
+import Label from '../../atoms/Label';
+import {scale} from 'react-native-size-matters';
 
 interface CustomImageProps {
   image: ImageData;
@@ -43,6 +46,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
     const initialDimensions = useRef({width: 0, height: 0});
     const initialPosition = useRef({x: 0, y: 0});
     const initialGesture = useRef({x: 0, y: 0});
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
       isMounted.current = true;
@@ -96,23 +100,41 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
       }
     }, [image.uri, image.id, width, height, onUpdate, panValues]);
 
-    const handleDelete = useCallback(() => {
-      Alert.alert(
-        'Delete Image',
-        'Are you sure you want to delete this image?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: () => onDelete(image.id),
-          },
-        ],
+    const DeleteModal = useCallback(() => {
+      return (
+        <ModalWindow
+          isVisible={isDeleting}
+          heading="Delete Image"
+          subHeading="This action cannot be undone."
+          content={() => (
+            <View style={{gap: 10}}>
+              <Label text="Are you sure you want to delete this image?" />
+              <View
+                style={{
+                  flexDirection: 'row-reverse',
+                  gap: 10,
+                  paddingTop: scale(10),
+                }}>
+                <ActionButton
+                  text="Delete"
+                  onPress={() => onDelete(image.id)}
+                />
+                <ActionButton
+                  text="Cancel"
+                  type="Secondary"
+                  onPress={() => setIsDeleting(false)}
+                />
+              </View>
+            </View>
+          )}
+          onBackPressed={() => setIsDeleting(false)}
+        />
       );
-    }, [image.id, onDelete]);
+    }, [image.id, onDelete, isDeleting]);
+
+    const handleDelete = useCallback(() => {
+      setIsDeleting(true);
+    }, []);
 
     const panResponder = useMemo(() => {
       if (!panValues[image.id]) {
@@ -337,6 +359,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
               }}>
               <Icon name="close" size={20} color="black" />
             </TouchableOpacity>
+            <DeleteModal />
           </>
         )}
       </Animated.View>

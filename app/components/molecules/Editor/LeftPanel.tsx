@@ -9,11 +9,13 @@ import {
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
 import {scale} from 'react-native-size-matters';
-import {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import LeftPanelOverhead from '../../atoms/LeftPanelOverhead';
 import Label from '../../atoms/Label';
 import {useEditorContext} from '../../../context/EditorContext';
 import {ElementData} from '../../../types';
+import ModalWindow from '../ModalWindow';
+import ActionButton from '../../atoms/ActionButton';
 
 interface LeftPanelProps {
   animatedSize: Animated.Value;
@@ -29,6 +31,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
   const {width, height} = useWindowDimensions();
   const [isLayersSelected, setIsLayersSelected] = useState(false);
   const [sortedElements, setSortedElements] = useState<ElementData[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     elements,
     selectedElementId,
@@ -58,16 +61,47 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
     }
   };
 
-  const handleDeletePress = (id: string) => {
-    Alert.alert('Delete', 'Are you sure you want to delete this element?', [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => handleDeleteElement(id),
-      },
-    ]);
-  };
+  const DeleteModal = useCallback(
+    ({id}: {id: string}) => {
+      return (
+        <ModalWindow
+          isVisible={isDeleting}
+          heading="Delete Element"
+          subHeading="This action cannot be undone."
+          content={() => (
+            <View style={{gap: 10}}>
+              <Label text="Are you sure you want to delete this element?" />
+              <View
+                style={{
+                  flexDirection: 'row-reverse',
+                  gap: 10,
+                  paddingTop: scale(10),
+                }}>
+                <ActionButton
+                  text="Delete"
+                  onPress={() => {
+                    handleDeleteElement(id);
+                    setIsDeleting(false);
+                  }}
+                />
+                <ActionButton
+                  text="Cancel"
+                  type="Secondary"
+                  onPress={() => setIsDeleting(false)}
+                />
+              </View>
+            </View>
+          )}
+          onBackPressed={() => setIsDeleting(false)}
+        />
+      );
+    },
+    [handleDeleteElement, isDeleting],
+  );
+
+  // const handleDeletePress = (id: string) => {
+  //   setIsDeleting(true);
+  // };
 
   return (
     <View>
@@ -79,43 +113,50 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
               <Label text="No items added" style={{color: '#555'}} />
             )}
             {sortedElements.map(element => (
-              <TouchableOpacity
+              <View
                 key={element.id}
-                activeOpacity={0.8}
-                onPress={() => setSelectedElementId(element.id)}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: scale(8),
                 }}>
-                <View
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedElementId(element.id)}
                   style={{
-                    width: scale(5),
-                    height: scale(5),
-                    borderRadius: scale(3),
-                    backgroundColor:
-                      selectedElementId === element.id ? '#eee' : '#0000',
-                    borderWidth: 1,
-                    borderColor: '#555',
-                  }}
-                />
-                <View style={{flex: 1}}>
-                  <Label
-                    text={element.name}
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: scale(8),
+                  }}>
+                  <View
                     style={{
-                      fontSize: scale(8),
+                      width: scale(5),
+                      height: scale(5),
+                      borderRadius: scale(3),
+                      backgroundColor:
+                        selectedElementId === element.id ? '#eee' : '#0000',
+                      borderWidth: 1,
+                      borderColor: '#555',
                     }}
                   />
-                </View>
-                <ControlIcon
-                  name="close"
-                  style={{backgroundColor: '#555', padding: scale(2)}}
-                  iconRatio={0.3}
-                  onPress={() => {
-                    handleDeletePress(element.id);
-                  }}
-                />
-              </TouchableOpacity>
+                  <View style={{flex: 1}}>
+                    <Label
+                      text={element.name}
+                      style={{
+                        fontSize: scale(8),
+                      }}
+                    />
+                  </View>
+                  <ControlIcon
+                    name="close"
+                    style={{backgroundColor: '#555', padding: scale(2)}}
+                    iconRatio={0.3}
+                    onPress={() => {
+                      setIsDeleting(true);
+                    }}
+                  />
+                </TouchableOpacity>
+                <DeleteModal id={element.id} />
+              </View>
             ))}
           </View>
         </LeftPanelOverhead>

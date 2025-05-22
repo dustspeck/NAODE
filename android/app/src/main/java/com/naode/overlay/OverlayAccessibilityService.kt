@@ -1,19 +1,28 @@
 package com.naode.overlay
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.WindowManager
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
+import androidx.annotation.RequiresApi
 import com.naode.overlay.impl.OverlayDataStoreImpl
 import com.naode.overlay.impl.OverlayStateManagerImpl
 import com.naode.overlay.impl.OverlayViewManagerImpl
+import com.naode.utils.CommonUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 class OverlayAccessibilityService : AccessibilityService() {
@@ -25,6 +34,14 @@ class OverlayAccessibilityService : AccessibilityService() {
     private lateinit var viewManager: OverlayViewManagerImpl
     private lateinit var dataStore: OverlayDataStoreImpl
     private lateinit var stateManager: OverlayStateManagerImpl
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var isServiceActive = false
+
+    companion object {
+        private const val NOTIFICATION_TIMEOUT = 200L
+        private const val SERVICE_RECOVERY_DELAY = 1000L
+    }
 
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -146,5 +163,62 @@ class OverlayAccessibilityService : AccessibilityService() {
         removeOverlays()
         mainHandler.removeCallbacksAndMessages(null)
         super.onDestroy()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        try {
+            intent?.action?.let { action ->
+                when (action) {
+                    "LOCK_SCREEN" -> performAction(GLOBAL_ACTION_LOCK_SCREEN)
+                    else -> {}
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onStartCommand: ${e.message}")
+        }
+        return START_STICKY
+    }
+
+    private fun performAction(action: Int) {
+        if (CommonUtil.checkAccessibilityPermission(this)) {
+            try {
+                performGlobalAction(action)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error performing action: ${e.message}")
+                recoverService()
+            }
+        } else {
+            CommonUtil.requestAccessibilityPermission(this)
+        }
+    }
+
+    private fun initializeService() {
+        val info = AccessibilityServiceInfo()
+        info.apply {
+            flags = AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+            notificationTimeout = NOTIFICATION_TIMEOUT
+            eventTypes = AccessibilityEvent.TYPES_ALL_MASK
+            feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
+        }
+        serviceInfo = info
+        isServiceActive = true
+    }
+
+    private fun recoverService() {
+        serviceScope.launch {
+            try {
+                withContext(Dispatchers.Main) {
+                    initializeService()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to recover service: ${e.message}")
+                // Attempt to restart the service
+                mainHandler.postDelayed({
+                    val intent = Intent(this@OverlayAccessibilityService, OverlayAccessibilityService::class.java)
+                    startService(intent)
+                }, SERVICE_RECOVERY_DELAY)
+            }
+        }
     }
 } 

@@ -44,4 +44,9 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
     fun triggerTickHaptic(){
         CommonUtil.triggerTickHaptic(reactApplicationContext)
     }
+
+    @ReactMethod
+    fun lockScreen() {
+        CommonUtil.lockScreen(reactApplicationContext)
+    }
 } 

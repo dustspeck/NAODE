@@ -21,7 +21,7 @@ const RightPanel: React.FC<RightPanelProps> = ({animatedSize}) => {
   const {width, height} = useWindowDimensions();
   const {handleAddImage, selectedElementId, handleAddText} = useEditorContext();
   const [isAddSelected, setIsAddSelected] = useState(false);
-
+  const [isSaveSelected, setIsSaveSelected] = useState(false);
   const onAddPress = () => {
     setIsAddSelected(!isAddSelected);
   };
@@ -55,6 +55,10 @@ const RightPanel: React.FC<RightPanelProps> = ({animatedSize}) => {
     }
   }, [selectedElementId]);
 
+  const handleSavePress = () => {
+    setIsSaveSelected(!isSaveSelected);
+  };
+
   return (
     <View>
       <Animated.View
@@ -65,6 +69,7 @@ const RightPanel: React.FC<RightPanelProps> = ({animatedSize}) => {
             outputRange: [0, height],
           }),
           alignItems: 'center',
+          gap: scale(10),
         }}>
           {isAddSelected && (
             <RightPanelOverhead>
@@ -89,6 +94,12 @@ const RightPanel: React.FC<RightPanelProps> = ({animatedSize}) => {
           isSelected={isAddSelected}
           label="Add"
           iconRatio={0.6}
+        />
+        <ControlIcon
+          name="download-outline"
+          onPress={handleSavePress}
+          isSelected={isSaveSelected}
+          label="Save image"
         />
       </Animated.View>
     </View>

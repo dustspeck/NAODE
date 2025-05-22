@@ -86,4 +86,11 @@ object CommonUtil {
             vibrator.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
         } else vibrator.vibrate(20)
     }
+
+    fun lockScreen(context: Context){
+        val intent = Intent(context, OverlayAccessibilityService::class.java)
+        intent.action = "LOCK_SCREEN"
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        context.startService(intent)
+    }
 }

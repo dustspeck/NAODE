@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Animated,
@@ -7,7 +7,6 @@ import {
   PanResponder,
   TextStyle,
   TouchableOpacity,
-  Alert,
   ViewStyle,
 } from 'react-native';
 import {TextData} from '../../../types';
@@ -17,6 +16,10 @@ import {
   MAX_FONT_SIZE,
   MIN_FONT_SIZE,
 } from '../../../constants/ui';
+import ModalWindow from '../ModalWindow';
+import ActionButton from '../../atoms/ActionButton';
+import Label from '../../atoms/Label';
+import {scale} from 'react-native-size-matters';
 
 interface CustomTextProps {
   text: TextData;
@@ -126,6 +129,7 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
     const lastFontWeight = useRef(text.fontWeight);
     const lastFontFamily = useRef(text.fontFamily);
     const lastDimensions = useRef({width: 0, height: 0});
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Memoize the text style to prevent recreation on every render
     const textContentStyle = useMemo<Animated.WithAnimatedObject<TextStyle>>(
@@ -246,19 +250,41 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
       };
     }, [text.fontSize, text.id, text.text, onUpdate]);
 
+    const DeleteModal = useCallback(() => {
+      return (
+        <ModalWindow
+          isVisible={isDeleting}
+          heading="Delete Text"
+          subHeading="This action cannot be undone."
+          content={() => (
+            <View style={{gap: 10}}>
+              <Label text="Are you sure you want to delete this text?" />
+              <View
+                style={{
+                  flexDirection: 'row-reverse',
+                  gap: 10,
+                  paddingTop: scale(10),
+                }}>
+                <ActionButton
+                  text="Delete"
+                  onPress={() => onDelete(text.id)}
+                />
+                <ActionButton
+                  text="Cancel"
+                  type="Secondary"
+                  onPress={() => setIsDeleting(false)}
+                />
+              </View>
+            </View>
+          )}
+          onBackPressed={() => setIsDeleting(false)}
+        />
+      );
+    }, [text.id, onDelete, isDeleting]);
+
     const handleDelete = useCallback(() => {
-      Alert.alert('Delete Text', 'Are you sure you want to delete this text?', [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => onDelete(text.id),
-        },
-      ]);
-    }, [text.id, onDelete]);
+      setIsDeleting(true);
+    }, []);
 
     const panResponder = useMemo(() => {
       if (!panValues[text.id]) {
@@ -365,6 +391,7 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
     );
 
     return (
+      <>
       <Animated.View {...panResponder.panHandlers} style={textStyle}>
         <Animated.Text ref={textRef} style={textContentStyle}>
           {text.text}
@@ -375,7 +402,9 @@ const CustomText: React.FC<CustomTextProps> = React.memo(
             resizeResponder={resizeResponder}
           />
         )}
-      </Animated.View>
+        </Animated.View>
+        <DeleteModal />
+      </>
     );
   },
   (prevProps, nextProps) => {
