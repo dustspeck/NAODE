@@ -5,7 +5,7 @@ import Label from '../../atoms/Label';
 import {scale} from 'react-native-size-matters';
 import {useEditorContext} from '../../../context/EditorContext';
 import {useEditorStore, useScreensStore} from '../../../services/mmkv';
-import {debounce, isEqual} from '../../../utils/common';
+import {debounce, isEqual, renameScreen} from '../../../utils/common';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import ModalWindow from '../ModalWindow';
 import ActionButton from '../../atoms/ActionButton';
@@ -81,15 +81,8 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
 
   const handleRenameConfirm = () => {
     setScreens({
-      screens: screens.screens.map((screen, index) => {
-        if (index === screenIndex) {
-          return {
-            ...screen,
-            name: newName,
-          };
-        }
-        return screen;
-      }),
+      screens: renameScreen(screens.screens, screenIndex, newName),
+      selectedIndex: screenIndex,
     });
     setIsRenameModalVisible(false);
   };

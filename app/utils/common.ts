@@ -1,3 +1,5 @@
+import {IScreensStore} from '../models/OverlayModel';
+
 export function isEqual(a: any, b: any) {
   if (a === b) return true;
 
@@ -47,4 +49,19 @@ export function debounce(fn: (...args: any[]) => void, delay: number) {
     timeout = setTimeout(() => fn(...args), delay);
   };
 }
-  
+
+export function renameScreen(
+  screens: IScreensStore['screens'],
+  screenIndex: number,
+  newName: string,
+) {
+  return screens.map((screen, index) => {
+    if (index === screenIndex) {
+      return {
+        ...screen,
+        name: newName,
+      };
+    }
+    return screen;
+  });
+}

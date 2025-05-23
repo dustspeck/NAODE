@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -15,17 +15,22 @@ import Toggle from '../components/atoms/Toggle';
 import {FlatList} from 'react-native';
 import FabButton from '../components/atoms/FabButton';
 import PageIndicator from '../components/atoms/PageIndicator';
-import Preview from '../components/molecules/Preview';
+import Preview from '../components/molecules/Home/Preview';
 import {useScreensStore} from '../services/mmkv';
+import Header from '../components/molecules/Home/Header';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
-  const {screens} = useScreensStore();
+  const {screens, setScreens} = useScreensStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [isApplied, setIsApplied] = useState(true);
   const {OverlayModule} = NativeModules;
+  const timer = useRef<NodeJS.Timeout | null>(null);
 
   const handleEditPress = () => {
     navigation.navigate('Editor', {screenIndex: selectedIndex});
@@ -35,34 +40,63 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
     OverlayModule.lockScreen();
   };
 
+  const handleScrollBeginDrag = () => {
+    OverlayModule.triggerTickHaptic();
+    setIsScrolling(true);
+    setIsSwiping(true);
+  };
+
+  const handleScrollEndDrag = () => {
+    setIsSwiping(false);
+  };
+
+  const handleScrollEnd = () => {
+    setIsScrolling(false);
+    setIsApplied(false);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      OverlayModule.triggerTickHaptic();
+      setIsApplied(true);
+    }, 1000);
+  };
+
   const onFlatListScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / scale(320));
     setSelectedIndex(index);
+    setScreens({
+      ...screens,
+      selectedIndex: index,
+    });
   };
 
   return (
     <View style={styles.mainContainer}>
       <StatusBarView color="black" />
-      <View style={styles.headerContainer}>
-        <View style={{flex: 1}}>
-          <Label text="NAODE" style={styles.heading} />
-        </View>
-        <View style={{width: scale(50)}}>
-          <Toggle
-            isEnabled={true}
-            isLoading={false}
-            onTogglePressed={() => {}}
-          />
-        </View>
-      </View>
-
+      <Header />
       <PermissionStatus />
 
       <FlatList
         data={screens.screens}
         keyExtractor={item => item.id}
-        renderItem={({item}) => <Preview heading={item.name} />}
+        renderItem={({item, index}) => (
+          <Preview
+            item={item}
+            index={index}
+            totalScreens={screens.screens.length}
+            isScrolling={isScrolling}
+            isSwiping={isSwiping}
+            isApplied={isApplied}
+          />
+        )}
+        initialScrollIndex={screens.selectedIndex}
+        getItemLayout={(_data, index) => ({
+          length: scale(320),
+          offset: scale(320) * index,
+          index,
+        })}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{alignSelf: 'flex-start'}}
@@ -71,6 +105,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
         disableIntervalMomentum
         decelerationRate={'fast'}
         onScroll={onFlatListScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+        onMomentumScrollEnd={handleScrollEnd}
       />
 
       <View style={styles.fabContainer}>
@@ -100,17 +137,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     paddingHorizontal: scale(16),
     paddingBottom: scale(5),
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    alignContent: 'center',
-    alignSelf: 'center',
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: 'bold',
   },
   fabContainer: {
     position: 'absolute',

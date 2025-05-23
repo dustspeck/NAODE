@@ -27,6 +27,7 @@ export const useEditorStore = () => {
 
 // AOD Screens Store
 const defaultScreensStore: IScreensStore = {
+  selectedIndex: 0,
   screens: [
     {
       id: '1',

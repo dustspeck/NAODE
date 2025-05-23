@@ -1,24 +1,39 @@
 import {Image, StyleSheet, View, useWindowDimensions} from 'react-native';
-import Label from '../atoms/Label';
-import {PREVIEW_IMAGE_RATIO} from '../../constants/ui';
+import Label from '../../atoms/Label';
+import {PREVIEW_IMAGE_RATIO} from '../../../constants/ui';
 import {scale} from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useCallback} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
-import {useEditorStore} from '../../services/mmkv';
+import {useEditorStore} from '../../../services/mmkv';
 import RNFS from 'react-native-fs';
+import {IScreen} from '../../../models/OverlayModel';
 
 interface IPreview {
-  heading: string;
+  isScrolling: boolean;
+  isSwiping: boolean;
+  isApplied: boolean;
+  item: IScreen;
+  index: number;
+  totalScreens: number;
 }
 
-const Preview = ({heading}: IPreview) => {
+const Preview = ({
+  isScrolling,
+  isSwiping,
+  isApplied,
+  item,
+  index,
+  totalScreens,
+}: IPreview) => {
   const {height, width} = useWindowDimensions();
   const {store} = useEditorStore();
   const previewPath = `${RNFS.DocumentDirectoryPath}/aod/aodpreview.jpg`;
   const [previewExists, setPreviewExists] = useState(false);
   const [imageKey, setImageKey] = useState(Date.now());
+  const decorationTimer = useRef<NodeJS.Timeout | null>(null);
+  const [decorationVisible, setDecorationVisible] = useState(true);
 
   const checkPreviewExists = async () => {
     try {
@@ -43,13 +58,77 @@ const Preview = ({heading}: IPreview) => {
       const timer = setTimeout(() => {
         checkPreviewExists();
       }, 1000);
-
       return () => clearTimeout(timer);
     }, [store.elements]),
   );
+
+  useEffect(() => {
+    if (isScrolling) {
+      setDecorationVisible(true);
+    }
+    if (decorationTimer.current) {
+      clearTimeout(decorationTimer.current);
+    }
+    decorationTimer.current = setTimeout(() => {
+      setDecorationVisible(false);
+    }, 500);
+    return () => {
+      if (decorationTimer.current) {
+        clearTimeout(decorationTimer.current);
+      }
+    };
+  }, [isScrolling]);
+
   return (
     <View style={styles.bodyContainer}>
-      <Label text={heading} style={{fontSize: 12, color: '#ccc'}} />
+      {(decorationVisible || isScrolling) && (
+        <View
+          style={{
+            position: 'absolute',
+            left: scale(20),
+            top: 0,
+            height: height * PREVIEW_IMAGE_RATIO,
+            justifyContent: 'center',
+          }}>
+          <Label
+            text={`${index + 1} of ${totalScreens}`}
+            style={{
+              transform: [{rotate: '-90deg'}],
+              color: '#eee5',
+              textAlign: 'center',
+            }}
+          />
+        </View>
+      )}
+      <View
+        style={[styles.headerContainer, {width: width * PREVIEW_IMAGE_RATIO}]}>
+        <Label text={item.name} style={styles.headerText} />
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: scale(2),
+            backgroundColor: !isApplied || isScrolling ? '#333' : '#14452f',
+            paddingHorizontal: scale(5),
+            paddingRight: !isApplied || isScrolling ? scale(10) : scale(7),
+            paddingLeft: !isApplied || isScrolling ? scale(10) : scale(5),
+            paddingVertical: scale(1),
+            borderRadius: scale(10),
+          }}>
+          {isApplied && !isScrolling && (
+            <Icon name="checkmark" size={scale(10)} color="#caffbf" />
+          )}
+          <Label
+            text={
+              isScrolling ? 'Selecting' : isApplied ? 'Applied' : 'Applying'
+            }
+            style={{
+              fontSize: 8,
+              color: isApplied && !isScrolling ? '#caffbf' : '#aaa',
+            }}
+          />
+        </View>
+      </View>
       <View
         style={[
           styles.previewContainer,
@@ -97,6 +176,17 @@ const styles = StyleSheet.create({
     borderColor: '#eee5',
     borderRadius: scale(10),
     overflow: 'hidden',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: scale(10),
+  },
+  headerText: {
+    fontSize: 12,
+    color: '#ccc',
+    fontWeight: 'bold',
   },
   previewImage: {
     width: '100%',

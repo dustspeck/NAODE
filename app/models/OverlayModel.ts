@@ -19,6 +19,7 @@ export interface IScreen {
 
 export interface IScreensStore {
   screens: IScreen[];
+  selectedIndex: number;
 }
 
 export type IElement = ImageData | TextData;
