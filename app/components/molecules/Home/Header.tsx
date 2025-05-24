@@ -1,9 +1,18 @@
-import {StyleSheet, Text, View} from 'react-native';
+import {NativeModules, StyleSheet, Text, View} from 'react-native';
 import Toggle from '../../atoms/Toggle';
 import {scale} from 'react-native-size-matters';
 import Label from '../../atoms/Label';
+import { useEditorStore } from '../../../services/mmkv';
 
 const Header = () => {
+  const [store, setStore] = useEditorStore();
+  const {OverlayModule} = NativeModules;
+
+  const handleTogglePressed = () => {
+    setStore({isEnabled: !store.isEnabled});
+    OverlayModule.removeAllOverlays();
+  };
+
   return (
     <View style={styles.headerContainer}>
       <View style={{flex: 1}}>
@@ -16,10 +25,10 @@ const Header = () => {
       </View>
       <View style={{width: scale(40)}}>
         <Toggle
-          isEnabled
-          isLoading={false}
-          onTogglePressed={() => {}}
           isImportant
+          isEnabled={store.isEnabled}
+          isLoading={false}
+          onTogglePressed={handleTogglePressed}
         />
       </View>
     </View>

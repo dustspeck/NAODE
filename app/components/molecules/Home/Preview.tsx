@@ -28,7 +28,7 @@ const Preview = ({
   totalScreens,
 }: IPreview) => {
   const {height, width} = useWindowDimensions();
-  const {store} = useEditorStore();
+  const [store] = useEditorStore();
   const previewPath = `${RNFS.DocumentDirectoryPath}/aod/aodpreview.jpg`;
   const [previewExists, setPreviewExists] = useState(false);
   const [imageKey, setImageKey] = useState(Date.now());
@@ -71,7 +71,7 @@ const Preview = ({
     }
     decorationTimer.current = setTimeout(() => {
       setDecorationVisible(false);
-    }, 500);
+    }, 800);
     return () => {
       if (decorationTimer.current) {
         clearTimeout(decorationTimer.current);

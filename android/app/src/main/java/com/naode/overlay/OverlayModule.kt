@@ -49,4 +49,16 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
     fun lockScreen() {
         CommonUtil.lockScreen(reactApplicationContext)
     }
+
+    @ReactMethod
+    fun removeAllOverlays(promise: Promise) {
+        try {
+            val service = OverlayAccessibilityService()
+            service.removeOverlays()
+            promise.resolve(true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error removing overlays", e)
+            promise.resolve(false)
+        }
+    }
 } 

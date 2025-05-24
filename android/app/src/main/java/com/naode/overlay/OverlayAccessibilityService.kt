@@ -94,6 +94,11 @@ class OverlayAccessibilityService : AccessibilityService() {
             return
         }
 
+        if (!dataStore.isOverlayEnabled()) {
+            Log.d(TAG, "Overlays are disabled, not showing overlays")
+            return
+        }
+
         removeOverlays()
 
         try {
@@ -129,7 +134,7 @@ class OverlayAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun removeOverlays() {
+    fun removeOverlays() {
         try {
             overlayViews.forEach { (id, view) ->
                 try {

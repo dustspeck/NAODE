@@ -29,26 +29,26 @@ const Toggle: React.FC<IToggleProps> = props => {
       activeOpacity={0.8}
       style={{flex: 1}}>
       <View style={{opacity: isLoading ? 0.5 : 1}}>
-        {isEnabled ? (
-          <Icon
-            name="toggle"
-            size={scale(30)}
-            style={{color: '#e1e1e1', textAlign: 'center'}}
-          />
-        ) : (
-          <View style={{flexDirection: 'row', gap: -scale(5)}}>
-          {isImportant && <WarningIcon size={scale(10)} />}
-          <Icon
-            name="toggle-outline"
-            size={scale(30)}
-            style={{
-              color: '#e1e1e1',
-              textAlign: 'center',
-              transform: [{rotate: '180deg'}],
-            }}
-          />
-          </View>
-        )}
+        <View style={{flexDirection: 'row'}}>
+          {isImportant && !isEnabled && <WarningIcon size={scale(10)} />}
+          {isEnabled ? (
+            <Icon
+              name="toggle"
+              size={scale(30)}
+              style={{color: '#e1e1e1', textAlign: 'center'}}
+            />
+          ) : (
+            <Icon
+              name="toggle-outline"
+              size={scale(30)}
+              style={{
+                color: '#e1e1e1',
+                textAlign: 'center',
+                transform: [{rotate: '180deg'}],
+              }}
+            />
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );

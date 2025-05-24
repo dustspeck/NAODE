@@ -136,7 +136,7 @@ const Editor: React.FC<EditorProps> = React.memo(
       updateElements,
     } = useEditorContext();
     const {width, height} = useWindowDimensions();
-    const {store} = useEditorStore();
+    const [store] = useEditorStore();
     const backHandlerRef = useRef<{remove: () => void} | null>(null);
     const [isDebugEnabled, setIsDebugEnabled] = useState(false);
 

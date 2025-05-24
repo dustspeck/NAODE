@@ -9,6 +9,7 @@ export interface IParentBounds {
 
 export interface IEditorStore {
   elements: IElement[];
+  isEnabled: boolean;
 }
 
 export interface IScreen {

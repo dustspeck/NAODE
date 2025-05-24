@@ -10,6 +10,7 @@ const MMKV = new MMKVLoader()
 // AOD Editor Store
 const defaultEditorStore: IEditorStore = {
   elements: [],
+  isEnabled: true,
 };
 
 export const useEditorStore = () => {
@@ -19,10 +20,11 @@ export const useEditorStore = () => {
     defaultEditorStore,
   );
 
-  return {
-    store,
-    setStore,
+  const setValues = (settings: Partial<IEditorStore>) => {
+    setStore(prevSetting => ({...prevSetting, ...settings}));
   };
+
+  return [store, setValues] as const;
 };
 
 // AOD Screens Store

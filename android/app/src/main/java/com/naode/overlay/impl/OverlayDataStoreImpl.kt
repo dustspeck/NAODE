@@ -49,4 +49,15 @@ class OverlayDataStoreImpl(context: Context) : OverlayDataStore {
             throw e
         }
     }
+
+    fun isOverlayEnabled(): Boolean {
+        return try {
+            val storeJson = mmkv.getString(editorStoreKey, defaultStoreJSONString)
+            val store = JSONObject(storeJson)
+            store.optBoolean("isEnabled", true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting overlay enabled state", e)
+            true // Default to true if there's an error
+        }
+    }
 } 

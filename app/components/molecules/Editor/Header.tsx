@@ -25,7 +25,7 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
   const {width, height} = useWindowDimensions();
   const navigation = useNavigation();
   const {elements, setSelectedElementId} = useEditorContext();
-  const {store, setStore} = useEditorStore();
+  const [store, setStore] = useEditorStore();
   const {screens, setScreens} = useScreensStore();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSavingState, setIsSavingState] = useState(false);
