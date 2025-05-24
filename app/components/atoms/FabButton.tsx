@@ -6,17 +6,23 @@ interface IFabButtonProps {
   icon: string;
   isPrimary?: boolean;
   onPress: () => void;
+  isDisabled?: boolean;
 }
 
 const FabButton: React.FC<IFabButtonProps> = ({
   icon,
   isPrimary = true,
   onPress,
+  isDisabled = false,
 }) => {
   const {OverlayModule} = NativeModules;
   return (
     <TouchableOpacity
-      style={isPrimary ? styles.fabButtonPrimary : styles.fabButtonSecondary}
+      disabled={isDisabled}
+      style={[
+        isPrimary ? styles.fabButtonPrimary : styles.fabButtonSecondary,
+        {opacity: isDisabled ? 0.5 : 1},
+      ]}
       onPress={() => {
         OverlayModule.triggerTickHaptic();
         onPress();

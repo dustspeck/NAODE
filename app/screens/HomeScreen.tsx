@@ -8,15 +8,13 @@ import {
 } from 'react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import PermissionStatus from '../components/molecules/PermissionsStatus';
-import Label from '../components/atoms/Label';
 import {scale} from 'react-native-size-matters';
 import StatusBarView from '../components/atoms/StatusBarView';
-import Toggle from '../components/atoms/Toggle';
 import {FlatList} from 'react-native';
 import FabButton from '../components/atoms/FabButton';
 import PageIndicator from '../components/atoms/PageIndicator';
 import Preview from '../components/molecules/Home/Preview';
-import {useScreensStore} from '../services/mmkv';
+import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
 
 type HomeScreenProps = {
@@ -25,10 +23,13 @@ type HomeScreenProps = {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   const {screens, setScreens} = useScreensStore();
+  const [_store, setStore] = useEditorStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
   const [isApplied, setIsApplied] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
   const {OverlayModule} = NativeModules;
   const timer = useRef<NodeJS.Timeout | null>(null);
 
@@ -58,6 +59,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
     }
     timer.current = setTimeout(() => {
       OverlayModule.triggerTickHaptic();
+      setStore({elements: screens.screens[selectedIndex].elements});
       setIsApplied(true);
     }, 1000);
   };
@@ -71,6 +73,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
       selectedIndex: index,
     });
   };
+
+  useEffect(() => {
+    if (isApplied && !isScrolling && !isSwiping) {
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+  }, [isApplied, isScrolling, isSwiping]);
 
   return (
     <View style={styles.mainContainer}>
@@ -112,14 +122,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
 
       <View style={styles.fabContainer}>
         <View style={styles.fabSecondaryContainer}>
-          <FabButton icon="bag-add" isPrimary={false} onPress={() => {}} />
           <FabButton
+            isDisabled={isLoading}
+            icon="bag-add"
+            isPrimary={false}
+            onPress={() => {}}
+          />
+          <FabButton
+            isDisabled={isLoading}
             icon="lock-closed"
             isPrimary={false}
             onPress={handleLockPress}
           />
         </View>
-        <FabButton icon="brush" onPress={handleEditPress} />
+        <FabButton
+          isDisabled={isLoading}
+          icon="brush"
+          onPress={handleEditPress}
+        />
       </View>
       <PageIndicator
         selectedIndex={selectedIndex}

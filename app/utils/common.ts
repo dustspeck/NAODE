@@ -1,4 +1,4 @@
-import {IScreensStore} from '../models/OverlayModel';
+import {IElement, IScreensStore} from '../models/OverlayModel';
 
 export function isEqual(a: any, b: any) {
   if (a === b) return true;
@@ -64,4 +64,22 @@ export function renameScreen(
     }
     return screen;
   });
+}
+
+export function updateScreen(
+  screens: IScreensStore['screens'],
+  screenIndex: number,
+  elements: IElement[],
+) {
+  return {
+    screens: screens.map((screen, index) =>
+      index === screenIndex
+        ? {
+            ...screen,
+            elements: elements,
+          }
+        : screen,
+    ),
+    selectedIndex: screenIndex,
+  };
 }

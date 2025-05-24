@@ -51,7 +51,7 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
     }
   }, [isZoomed]);
 
-  const saveEditorImage = async () => {
+  const saveEditorImage = async (id: string) => {
     setEditorBorderWidth(0);
     try {
       // Create internal files directory if it doesn't exist
@@ -78,8 +78,8 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
       });
 
       // Move files to internal directory
-      const highQualityPath = `${internalDir}/aod.jpg`;
-      const previewPath = `${internalDir}/aodpreview.jpg`;
+      const highQualityPath = `${internalDir}/aod_${id}.jpg`;
+      const previewPath = `${internalDir}/aodpreview_${id}.jpg`;
 
       await RNFS.moveFile(highQualityUri, highQualityPath);
       await RNFS.moveFile(previewUri, previewPath);

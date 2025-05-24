@@ -29,11 +29,17 @@ const Preview = ({
 }: IPreview) => {
   const {height, width} = useWindowDimensions();
   const [store] = useEditorStore();
-  const previewPath = `${RNFS.DocumentDirectoryPath}/aod/aodpreview.jpg`;
+  
   const [previewExists, setPreviewExists] = useState(false);
   const [imageKey, setImageKey] = useState(Date.now());
   const decorationTimer = useRef<NodeJS.Timeout | null>(null);
   const [decorationVisible, setDecorationVisible] = useState(true);
+
+  const getPreviewPath = (id: string) => {
+    return `${RNFS.DocumentDirectoryPath}/aod/aodpreview_${id}.jpg`;
+  };
+
+  const previewPath = getPreviewPath(item.id);
 
   const checkPreviewExists = async () => {
     try {
@@ -172,8 +178,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: scale(20),
     marginTop: scale(10),
-    borderWidth: 1,
-    borderColor: '#eee5',
+    borderWidth: 3,
+    borderTopWidth: 10,
+    borderBottomWidth: 10,
+    borderColor: '#6665',
     borderRadius: scale(10),
     overflow: 'hidden',
   },

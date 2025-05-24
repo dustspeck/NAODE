@@ -17,8 +17,6 @@ const Header = () => {
     <View style={styles.headerContainer}>
       <View style={{flex: 1}}>
         <View style={{flexDirection: 'row'}}>
-          {/* <Label text="AOD" style={{fontSize: 24, fontWeight: 'bold'}} />
-          <Label text="itore." style={{fontSize: 24, fontWeight: '200'}} /> */}
           <Label text="Aodes" style={{fontSize: 24, fontWeight: 'bold'}} />
           <Label text="ign." style={{fontSize: 24, fontWeight: '200'}} />
         </View>

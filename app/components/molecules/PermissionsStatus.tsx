@@ -6,13 +6,14 @@ import ActionListItem from '../../components/atoms/ActionListItem';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Label from '../atoms/Label';
 import {scale} from 'react-native-size-matters';
+import {useEditorStore} from '../../services/mmkv';
 
 function PermissionStatus(): React.JSX.Element | null {
   const {OverlayModule} = NativeModules;
   const [appState, setAppState] = useState(AppState.currentState);
-
   const [permissionsUpdated, setPermissionsUpdated] = useState(false);
   const [accessibilityPermission, setAccessibilityPermission] = useState(false);
+  const [store] = useEditorStore();
 
   useEffect(() => {
     updatePermissionStates();
@@ -74,6 +75,39 @@ function PermissionStatus(): React.JSX.Element | null {
     );
   };
 
+  const StatusMessage = ({
+    isLoading,
+    isEnabled,
+  }: {
+    isLoading: boolean | undefined;
+    isEnabled: boolean | undefined;
+  }) => {
+    return (
+      <View style={{flexDirection: 'row', alignContent: 'center'}}>
+        <Icon
+          name={
+            isLoading ? 'time-outline' : isEnabled ? 'checkmark' : 'alert'
+          }
+          style={{
+            fontSize: scale(16),
+            paddingRight: scale(5),
+            color: isLoading ? '#39ace7' : isEnabled ? '#009900' : '#999900',
+          }}
+        />
+        <Label
+          text={
+            isLoading
+              ? 'Please provide required permissions'
+              : isEnabled
+              ? 'Everything looks good!'
+              : 'AOD is disabled'
+          }
+          style={{color: '#999'}}
+        />
+      </View>
+    );
+  };
+
   interface IAllPermissionsStatusProps {
     isLoading?: boolean;
   }
@@ -81,24 +115,7 @@ function PermissionStatus(): React.JSX.Element | null {
     const {isLoading} = props;
     return (
       <View style={{marginVertical: scale(10), marginBottom: scale(25)}}>
-        <View style={{flexDirection: 'row', alignContent: 'center'}}>
-          <Icon
-            name={isLoading ? 'time-outline' : 'checkmark-done'}
-            style={{
-              fontSize: scale(16),
-              paddingRight: scale(8),
-              color: isLoading ? '#39ace7' : '#009900',
-            }}
-          />
-          <Label
-            text={
-              isLoading
-                ? 'Please provide required permissions'
-                : 'All required permissions granted'
-            }
-            style={{color: '#999'}}
-          />
-        </View>
+        <StatusMessage isLoading={isLoading} isEnabled={store.isEnabled} />
       </View>
     );
   };

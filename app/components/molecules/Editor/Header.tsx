@@ -5,7 +5,12 @@ import Label from '../../atoms/Label';
 import {scale} from 'react-native-size-matters';
 import {useEditorContext} from '../../../context/EditorContext';
 import {useEditorStore, useScreensStore} from '../../../services/mmkv';
-import {debounce, isEqual, renameScreen} from '../../../utils/common';
+import {
+  debounce,
+  isEqual,
+  renameScreen,
+  updateScreen,
+} from '../../../utils/common';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import ModalWindow from '../ModalWindow';
 import ActionButton from '../../atoms/ActionButton';
@@ -17,7 +22,7 @@ import TextBox from '../../atoms/TextBox';
 const {OverlayModule} = NativeModules;
 
 interface IHeaderProps {
-  saveImage: () => void;
+  saveImage: (id: string) => void;
   screenIndex: number;
 }
 
@@ -72,12 +77,13 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
     setSelectedElementId(null);
     setIsSavingState(true);
     setStore({elements});
-    saveImage();
+    setScreens(updateScreen(screens.screens, screenIndex, elements));
+    saveImage(screens.screens[screenIndex].id);
     setIsSaveModalVisible(false);
     setTimeout(() => {
       setIsSavingState(false);
     }, 1000);
-  }, [elements, setStore, saveImage]);
+  }, [elements, setStore, saveImage, screenIndex, screens.screens]);
 
   const handleRenameConfirm = () => {
     setScreens({
