@@ -2,13 +2,11 @@ import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Animated,
-  Linking,
   ToastAndroid,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
-import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
+import {DEFAULT_TEXT_VALUE, EDIT_CONTROLS_RATIO, getImageLibraryOptions, getUserImageURI} from '../../../constants/ui';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useEditorContext} from '../../../context/EditorContext';
 import ControlIcon from '../../atoms/ControlIcon';
@@ -18,15 +16,14 @@ import {scale} from 'react-native-size-matters';
 import {updateScreen} from '../../../utils/common';
 import {useScreensStore} from '../../../services/mmkv';
 import {useEditorStore} from '../../../services/mmkv';
-import RNFS from 'react-native-fs';
 import {
-  AOD_IMAGE_PATH,
-  AOD_PREVIEW_IMAGE_PATH,
   GALLERY_IMAGE_PATH,
+  getGalleryImagePath,
+  getRenderedImagePath,
   USER_IMAGES_PATH,
 } from '../../../constants/paths';
 import {IScreen} from '../../../models/OverlayModel';
-import {cleanupUnusedImages} from '../../../utils/imageCleanup';
+import { copyImage, ensureDirectoryExists } from '../../../utils/storage';
 
 interface RightPanelProps {
   animatedSize: Animated.Value;
@@ -62,10 +59,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
   const onAddImage = async () => {
     launchImageLibrary(
-      {
-        mediaType: 'photo',
-        quality: 1,
-      },
+      getImageLibraryOptions(),
       async response => {
         if (response.didCancel) {
           ToastAndroid.show('No image selected', ToastAndroid.SHORT);
@@ -73,24 +67,10 @@ const RightPanel: React.FC<RightPanelProps> = ({
         }
         if (response.assets && response.assets[0]?.uri) {
           try {
-            // Create user images directory if it doesn't exist
-            const exists = await RNFS.exists(USER_IMAGES_PATH);
-            if (!exists) {
-              await RNFS.mkdir(USER_IMAGES_PATH);
-            }
-
-            // Generate a random filename
-            const timestamp = Date.now();
-            const randomString = Math.random().toString(36).substring(7);
-            const extension = response.assets[0].uri.split('.').pop();
-            const newFilename = `user_image_${timestamp}_${randomString}.${extension}`;
-            const newPath = `${USER_IMAGES_PATH}/${newFilename}`;
-
-            // Copy the image to internal storage
-            await RNFS.copyFile(response.assets[0].uri, newPath);
-
-            // Use the new internal path
-            handleAddImage(`file://${newPath}`);
+            await ensureDirectoryExists(USER_IMAGES_PATH);
+            const newPath = getUserImageURI(response.assets[0].uri);
+            await copyImage(response.assets[0].uri, newPath);
+            handleAddImage(newPath);
           } catch (error) {
             console.error('Error copying image:', error);
             ToastAndroid.show('Error saving image', ToastAndroid.SHORT);
@@ -102,21 +82,16 @@ const RightPanel: React.FC<RightPanelProps> = ({
   };
 
   const onAddText = () => {
-    handleAddText('Hello');
+    handleAddText(DEFAULT_TEXT_VALUE);
     setIsAddSelected(false);
   };
 
   const saveImageToGallery = async (screen: IScreen) => {
     try {
-      const exists = await RNFS.exists(GALLERY_IMAGE_PATH);
-      if (!exists) {
-        await RNFS.mkdir(GALLERY_IMAGE_PATH);
-      }
-      const imagePath = `${AOD_IMAGE_PATH}/aod_${screen.id}.jpg`;
-      const outputPath = `${GALLERY_IMAGE_PATH}/Aodes_${
-        screen.name
-      }_${Date.now()}.jpg`;
-      await RNFS.copyFile(imagePath, outputPath);
+      await ensureDirectoryExists(GALLERY_IMAGE_PATH);
+      const imagePath = getRenderedImagePath(screen.id, 'aod');
+      const outputPath = getGalleryImagePath(screen.id);
+      await copyImage(imagePath, outputPath);
       ToastAndroid.show('Image saved to gallery', ToastAndroid.SHORT);
       console.log('Image saved to gallery', outputPath);
       setSavedToPath(outputPath);
@@ -134,11 +109,8 @@ const RightPanel: React.FC<RightPanelProps> = ({
     setStore({elements});
     setScreens(updateScreen(screens.screens, screenIndex, elements));
     saveImage(screens.screens[screenIndex].id, () => {
-      saveImageToGallery(screens.screens[screenIndex]).then(() => {
-        cleanupUnusedImages(elements).then(() => {
-          setIsSaving(false);
-        });
-      });
+      saveImageToGallery(screens.screens[screenIndex]);
+      setIsSaving(false);
     });
   };
 
@@ -204,7 +176,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
               </View>
             ) : (
               <View style={{gap: scale(5), flex: 1, justifyContent: 'center'}}>
-                <Label text="Saved at: " />
+                <Label text="Saved at " />
                 {savedToPath && (
                   <Label
                     text={savedToPath}

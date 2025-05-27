@@ -1,6 +1,6 @@
 import RNFS from 'react-native-fs';
-import { AOD_IMAGE_PATH, USER_IMAGES_PATH } from '../constants/paths';
-import { handleError, createError } from './errorHandling';
+import {AOD_IMAGE_PATH} from '../constants/paths';
+import {handleError, createError} from './errorHandling';
 
 export const ensureDirectoryExists = async (path: string): Promise<void> => {
   try {
@@ -12,7 +12,7 @@ export const ensureDirectoryExists = async (path: string): Promise<void> => {
     handleError(
       error,
       'Storage:ensureDirectoryExists',
-      createError('Failed to create directory', 'DIR_CREATE_ERROR', { path }),
+      createError('Failed to create directory', 'DIR_CREATE_ERROR', {path}),
     );
     throw error;
   }
@@ -51,28 +51,17 @@ export const deleteImage = async (path: string): Promise<void> => {
     handleError(
       error,
       'Storage:deleteImage',
-      createError('Failed to delete image', 'IMAGE_DELETE_ERROR', { path }),
+      createError('Failed to delete image', 'IMAGE_DELETE_ERROR', {path}),
     );
     throw error;
   }
 };
 
-export const cleanupUnusedFiles = async (usedPaths: Set<string>): Promise<void> => {
+export const copyImage = async (sourcePath: string, targetPath: string): Promise<void> => {
   try {
-    await ensureDirectoryExists(USER_IMAGES_PATH);
-    const files = await RNFS.readDir(USER_IMAGES_PATH);
-
-    for (const file of files) {
-      if (!usedPaths.has(file.path)) {
-        await deleteImage(file.path);
-      }
-    }
+    await RNFS.copyFile(sourcePath, targetPath);
   } catch (error) {
-    handleError(
-      error,
-      'Storage:cleanupUnusedFiles',
-      createError('Failed to cleanup unused files', 'CLEANUP_ERROR'),
-    );
+    handleError(error, 'Storage:copyFile', createError('Failed to copy file', 'FILE_COPY_ERROR', {sourcePath, targetPath}));
     throw error;
   }
-}; 
+};

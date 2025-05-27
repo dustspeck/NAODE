@@ -1,5 +1,5 @@
 import { ElementData } from '../types';
-import { deleteImage, cleanupUnusedFiles } from './storage';
+import { deleteImage } from './storage';
 import { handleError, createError } from './errorHandling';
 
 /**
@@ -48,19 +48,3 @@ const getUsedImageFilenames = (elements: ElementData[]): Set<string> => {
   });
   return usedFilenames;
 };
-
-/**
- * Cleans up unused images from the user_images directory
- */
-export const cleanupUnusedImages = async (elements: ElementData[]): Promise<void> => {
-  try {
-    const usedFilenames = getUsedImageFilenames(elements);
-    await cleanupUnusedFiles(usedFilenames);
-  } catch (error) {
-    handleError(
-      error,
-      'ImageCleanup:cleanupUnusedImages',
-      createError('Failed to cleanup unused images', 'UNUSED_IMAGES_CLEANUP_ERROR'),
-    );
-  }
-}; 

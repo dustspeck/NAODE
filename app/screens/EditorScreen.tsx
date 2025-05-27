@@ -1,16 +1,16 @@
 import React, {useEffect, useRef} from 'react';
-import {View, StatusBar, Animated, Dimensions} from 'react-native';
+import {View, StatusBar, Animated, Dimensions, PixelRatio} from 'react-native';
 import StatusBarView from '../components/atoms/StatusBarView';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
 import EditorHeader from '../components/molecules/Editor/Header';
-import {EDIT_WINDOW_RATIO, PREVIEW_IMAGE_RATIO} from '../constants/ui';
+import {EDIT_WINDOW_RATIO, getHighQualityImageProps, getPreviewImageProps} from '../constants/ui';
 import RightPanel from '../components/molecules/Editor/RightPanel';
 import LeftPanel from '../components/molecules/Editor/LeftPanel';
 import BottomPanel from '../components/molecules/Editor/BottomPanel';
 import Editor from '../components/molecules/Editor/Editor';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {captureRef} from 'react-native-view-shot';
-import { AOD_IMAGE_PATH } from '../constants/paths';
+import { AOD_IMAGE_PATH, getRenderedImagePath } from '../constants/paths';
 import { handleError, createError } from '../utils/errorHandling';
 import { measureAsync } from '../utils/performance';
 import { saveImage, ensureDirectoryExists } from '../utils/storage';
@@ -29,7 +29,10 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
   const animatedSize = useRef(new Animated.Value(EDIT_WINDOW_RATIO)).current;
   const panValues = useRef<{[key: string]: Animated.ValueXY}>({}).current;
   const ref = useRef<View>(null);
-  const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+  const {width: screenWidth, height: screenHeight} = Dimensions.get('screen');
+  const pixelRatio = PixelRatio.get();
+  const exactWidth = Math.round(screenWidth * pixelRatio);
+  const exactHeight = Math.round(screenHeight * pixelRatio);
   const screenIndex = route?.params?.screenIndex ?? 0;
 
   useEffect(() => {
@@ -58,40 +61,20 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
     setEditorBorderWidth(0);
     try {
       await measureAsync('saveEditorImage', async () => {
-        // Create internal files directory if it doesn't exist
         await ensureDirectoryExists(AOD_IMAGE_PATH);
 
-        // Capture high quality image
-        const highQualityUri = await captureRef(ref, {
-          format: 'jpg',
-          quality: 1,
-          width: screenWidth,
-          height: screenHeight,
-        });
+        const highQualityUri = await captureRef(ref, getHighQualityImageProps(exactWidth, exactHeight));
+        const previewUri = await captureRef(ref, getPreviewImageProps(exactWidth, exactHeight));
 
-        // Capture preview image
-        const previewUri = await captureRef(ref, {
-          format: 'jpg',
-          quality: 0.8,
-          width: screenWidth * PREVIEW_IMAGE_RATIO,
-          height: screenHeight * PREVIEW_IMAGE_RATIO,
-        });
-
-        // Move files to internal directory
-        const highQualityPath = `${AOD_IMAGE_PATH}/aod_${id}.jpg`;
-        const previewPath = `${AOD_IMAGE_PATH}/aodpreview_${id}.jpg`;
+        const highQualityPath = getRenderedImagePath(id, 'aod');
+        const previewPath = getRenderedImagePath(id, 'aodpreview');
 
         await saveImage(highQualityUri, highQualityPath);
         await saveImage(previewUri, previewPath);
 
-        console.log('Images saved to internal storage:', {
-          highQuality: highQualityPath,
-          preview: previewPath,
-        });
+        console.log('Images saved to internal storage:', previewPath, highQualityPath);
 
-        if (callback) {
-          callback();
-        }
+        if (callback) callback();
       });
     } catch (error) {
       handleError(
@@ -99,8 +82,9 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
         'EditorScreen:saveEditorImage',
         createError('Failed to save editor images', 'EDITOR_SAVE_ERROR', {
           id,
-          screenWidth,
-          screenHeight,
+          exactWidth,
+          exactHeight,
+          pixelRatio,
         }),
       );
     } finally {

@@ -15,7 +15,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useEditorStore} from '../../../services/mmkv';
 import RNFS from 'react-native-fs';
 import {IScreen} from '../../../models/OverlayModel';
-import {AOD_PREVIEW_IMAGE_PATH} from '../../../constants/paths';
+import {getRenderedImagePath} from '../../../constants/paths';
 
 interface IPreview {
   isScrolling: boolean;
@@ -44,20 +44,14 @@ const Preview = ({
   const decorationTimer = useRef<NodeJS.Timeout | null>(null);
   const [decorationVisible, setDecorationVisible] = useState(true);
 
-  const getPreviewPath = (id: string) => {
-    return `${AOD_PREVIEW_IMAGE_PATH}/aodpreview_${id}.jpg`;
-  };
-
-  const previewPath = getPreviewPath(item.id);
+  const previewPath = getRenderedImagePath(item.id, 'aodpreview');
 
   const checkPreviewExists = async () => {
     try {
       const elementsLength = store.elements.length;
       const exists = await RNFS.exists(previewPath);
       setPreviewExists(exists && elementsLength > 0);
-      if (exists) {
-        setImageKey(Date.now()); // Force image reload
-      }
+      if (exists) setImageKey(Date.now());
     } catch (error) {
       console.error('Error checking preview:', error);
       setPreviewExists(false);

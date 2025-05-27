@@ -191,7 +191,7 @@ const Editor: React.FC<EditorProps> = React.memo(
           inputRange: [0, 1],
           outputRange: [0, height],
         }),
-        backgroundColor: 'black',
+        backgroundColor: 'transparent',
         borderRadius: 10,
         borderWidth: isZoomed ? 0 : editorBorderWidth,
         borderColor: '#555',
