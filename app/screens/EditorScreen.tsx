@@ -10,8 +10,10 @@ import BottomPanel from '../components/molecules/Editor/BottomPanel';
 import Editor from '../components/molecules/Editor/Editor';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {captureRef} from 'react-native-view-shot';
-import RNFS from 'react-native-fs';
 import { AOD_IMAGE_PATH } from '../constants/paths';
+import { handleError, createError } from '../utils/errorHandling';
+import { measureAsync } from '../utils/performance';
+import { saveImage, ensureDirectoryExists } from '../utils/storage';
 
 interface IEditorScreenProps {
   route: {
@@ -55,46 +57,52 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
   const saveEditorImage = async (id: string, callback?: () => void) => {
     setEditorBorderWidth(0);
     try {
-      // Create internal files directory if it doesn't exist
-      const internalDir = AOD_IMAGE_PATH;
-      const exists = await RNFS.exists(internalDir);
-      if (!exists) {
-        await RNFS.mkdir(internalDir);
-      }
+      await measureAsync('saveEditorImage', async () => {
+        // Create internal files directory if it doesn't exist
+        await ensureDirectoryExists(AOD_IMAGE_PATH);
 
-      // Capture high quality image
-      const highQualityUri = await captureRef(ref, {
-        format: 'jpg',
-        quality: 1,
-        width: screenWidth,
-        height: screenHeight,
+        // Capture high quality image
+        const highQualityUri = await captureRef(ref, {
+          format: 'jpg',
+          quality: 1,
+          width: screenWidth,
+          height: screenHeight,
+        });
+
+        // Capture preview image
+        const previewUri = await captureRef(ref, {
+          format: 'jpg',
+          quality: 0.8,
+          width: screenWidth * PREVIEW_IMAGE_RATIO,
+          height: screenHeight * PREVIEW_IMAGE_RATIO,
+        });
+
+        // Move files to internal directory
+        const highQualityPath = `${AOD_IMAGE_PATH}/aod_${id}.jpg`;
+        const previewPath = `${AOD_IMAGE_PATH}/aodpreview_${id}.jpg`;
+
+        await saveImage(highQualityUri, highQualityPath);
+        await saveImage(previewUri, previewPath);
+
+        console.log('Images saved to internal storage:', {
+          highQuality: highQualityPath,
+          preview: previewPath,
+        });
+
+        if (callback) {
+          callback();
+        }
       });
-
-      // Capture preview image
-      const previewUri = await captureRef(ref, {
-        format: 'jpg',
-        quality: 0.8,
-        width: screenWidth * PREVIEW_IMAGE_RATIO,
-        height: screenHeight * PREVIEW_IMAGE_RATIO,
-      });
-
-      // Move files to internal directory
-      const highQualityPath = `${internalDir}/aod_${id}.jpg`;
-      const previewPath = `${internalDir}/aodpreview_${id}.jpg`;
-
-      await RNFS.moveFile(highQualityUri, highQualityPath);
-      await RNFS.moveFile(previewUri, previewPath);
-
-      console.log('Images saved to internal storage:', {
-        highQuality: highQualityPath,
-        preview: previewPath,
-      });
-
-      if (callback) {
-        callback();
-      }
     } catch (error) {
-      console.error('Error saving images:', error);
+      handleError(
+        error,
+        'EditorScreen:saveEditorImage',
+        createError('Failed to save editor images', 'EDITOR_SAVE_ERROR', {
+          id,
+          screenWidth,
+          screenHeight,
+        }),
+      );
     } finally {
       setEditorBorderWidth(1);
     }

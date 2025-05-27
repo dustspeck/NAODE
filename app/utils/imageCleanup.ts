@@ -1,6 +1,6 @@
-import RNFS from 'react-native-fs';
-import {USER_IMAGES_PATH} from '../constants/paths';
-import {ElementData} from '../types';
+import { ElementData } from '../types';
+import { deleteImage, cleanupUnusedFiles } from './storage';
+import { handleError, createError } from './errorHandling';
 
 /**
  * Extracts the filename from a file URI
@@ -23,13 +23,13 @@ const getFilePathFromUri = (uri: string): string => {
 export const cleanupImage = async (uri: string): Promise<void> => {
   try {
     const filePath = getFilePathFromUri(uri);
-    const exists = await RNFS.exists(filePath);
-    if (exists) {
-      await RNFS.unlink(filePath);
-      console.log('Deleted image:', filePath);
-    }
+    await deleteImage(filePath);
   } catch (error) {
-    console.error('Error deleting image:', error);
+    handleError(
+      error,
+      'ImageCleanup:cleanupImage',
+      createError('Failed to cleanup image', 'IMAGE_CLEANUP_ERROR', { uri }),
+    );
   }
 };
 
@@ -54,30 +54,13 @@ const getUsedImageFilenames = (elements: ElementData[]): Set<string> => {
  */
 export const cleanupUnusedImages = async (elements: ElementData[]): Promise<void> => {
   try {
-    // Get list of used image filenames
     const usedFilenames = getUsedImageFilenames(elements);
-
-    // Check if user_images directory exists
-    const exists = await RNFS.exists(USER_IMAGES_PATH);
-    if (!exists) {
-      return;
-    }
-
-    // Get all files in the user_images directory
-    const files = await RNFS.readDir(USER_IMAGES_PATH);
-
-    // Delete files that are not in use
-    for (const file of files) {
-      if (!usedFilenames.has(file.name)) {
-        try {
-          await RNFS.unlink(file.path);
-          console.log('Deleted unused image:', file.name);
-        } catch (error) {
-          console.error('Error deleting file:', file.name, error);
-        }
-      }
-    }
+    await cleanupUnusedFiles(usedFilenames);
   } catch (error) {
-    console.error('Error cleaning up images:', error);
+    handleError(
+      error,
+      'ImageCleanup:cleanupUnusedImages',
+      createError('Failed to cleanup unused images', 'UNUSED_IMAGES_CLEANUP_ERROR'),
+    );
   }
 }; 
