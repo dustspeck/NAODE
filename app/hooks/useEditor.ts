@@ -1,6 +1,7 @@
 import {useState, useCallback} from 'react';
 import {ElementData, ImageData, TextData} from '../types';
 import {DEFAULT_FONT_SIZE} from '../constants/ui';
+import {cleanupImage} from '../utils/imageCleanup';
 
 export const useEditor = () => {
   const [elements, setElements] = useState<ElementData[]>([]);
@@ -78,9 +79,19 @@ export const useEditor = () => {
 
   const handleDeleteElement = useCallback(
     (id: string) => {
-      setElements(prevElements =>
-        prevElements.filter(element => element.id !== id),
-      );
+      setElements(prevElements => {
+        // Find the element being deleted
+        const deletedElement = prevElements.find(element => element.id === id);
+        
+        // If it's an image element, clean up its file
+        if (deletedElement?.type === 'image') {
+          cleanupImage(deletedElement.uri);
+        }
+        
+        // Return the filtered elements
+        return prevElements.filter(element => element.id !== id);
+      });
+      
       if (selectedElementId === id) {
         setSelectedElementId(null);
       }

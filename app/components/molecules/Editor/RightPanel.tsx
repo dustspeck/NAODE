@@ -23,8 +23,10 @@ import {
   AOD_IMAGE_PATH,
   AOD_PREVIEW_IMAGE_PATH,
   GALLERY_IMAGE_PATH,
+  USER_IMAGES_PATH,
 } from '../../../constants/paths';
 import {IScreen} from '../../../models/OverlayModel';
+import {cleanupUnusedImages} from '../../../utils/imageCleanup';
 
 interface RightPanelProps {
   animatedSize: Animated.Value;
@@ -58,19 +60,41 @@ const RightPanel: React.FC<RightPanelProps> = ({
     }
   }, [selectedElementId]);
 
-  const onAddImage = () => {
+  const onAddImage = async () => {
     launchImageLibrary(
       {
         mediaType: 'photo',
         quality: 1,
       },
-      response => {
+      async response => {
         if (response.didCancel) {
           ToastAndroid.show('No image selected', ToastAndroid.SHORT);
           return;
         }
         if (response.assets && response.assets[0]?.uri) {
-          handleAddImage(response.assets[0].uri);
+          try {
+            // Create user images directory if it doesn't exist
+            const exists = await RNFS.exists(USER_IMAGES_PATH);
+            if (!exists) {
+              await RNFS.mkdir(USER_IMAGES_PATH);
+            }
+
+            // Generate a random filename
+            const timestamp = Date.now();
+            const randomString = Math.random().toString(36).substring(7);
+            const extension = response.assets[0].uri.split('.').pop();
+            const newFilename = `user_image_${timestamp}_${randomString}.${extension}`;
+            const newPath = `${USER_IMAGES_PATH}/${newFilename}`;
+
+            // Copy the image to internal storage
+            await RNFS.copyFile(response.assets[0].uri, newPath);
+
+            // Use the new internal path
+            handleAddImage(`file://${newPath}`);
+          } catch (error) {
+            console.error('Error copying image:', error);
+            ToastAndroid.show('Error saving image', ToastAndroid.SHORT);
+          }
         }
       },
     );
@@ -111,9 +135,10 @@ const RightPanel: React.FC<RightPanelProps> = ({
     setScreens(updateScreen(screens.screens, screenIndex, elements));
     saveImage(screens.screens[screenIndex].id, () => {
       saveImageToGallery(screens.screens[screenIndex]).then(() => {
-        setIsSaving(false);
+        cleanupUnusedImages(elements).then(() => {
+          setIsSaving(false);
+        });
       });
-      setIsSaving(false);
     });
   };
 
