@@ -41,7 +41,7 @@ export const useEditor = () => {
         fontSize: DEFAULT_FONT_SIZE,
         fontWeight: 'normal' as 'normal' | 'bold',
         fontFamily: 'RobotoRegular',
-        color: '#fff',
+        color: '#ffffff',
         zIndex: elements.length,
         rotation: 0,
         name: `${elements.length + 1} Text`,

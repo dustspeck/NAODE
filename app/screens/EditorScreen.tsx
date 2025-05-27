@@ -11,6 +11,7 @@ import Editor from '../components/molecules/Editor/Editor';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {captureRef} from 'react-native-view-shot';
 import RNFS from 'react-native-fs';
+import { AOD_IMAGE_PATH } from '../constants/paths';
 
 interface IEditorScreenProps {
   route: {
@@ -51,11 +52,11 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
     }
   }, [isZoomed]);
 
-  const saveEditorImage = async (id: string) => {
+  const saveEditorImage = async (id: string, callback?: () => void) => {
     setEditorBorderWidth(0);
     try {
       // Create internal files directory if it doesn't exist
-      const internalDir = `${RNFS.DocumentDirectoryPath}/aod`;
+      const internalDir = AOD_IMAGE_PATH;
       const exists = await RNFS.exists(internalDir);
       if (!exists) {
         await RNFS.mkdir(internalDir);
@@ -88,6 +89,10 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
         highQuality: highQualityPath,
         preview: previewPath,
       });
+
+      if (callback) {
+        callback();
+      }
     } catch (error) {
       console.error('Error saving images:', error);
     } finally {
@@ -131,7 +136,13 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
               editorBorderWidth={editorBorderWidth}
             />
           </View>
-          {!isZoomed && <RightPanel animatedSize={animatedSize} />}
+          {!isZoomed && (
+            <RightPanel
+              animatedSize={animatedSize}
+              saveImage={saveEditorImage}
+              screenIndex={screenIndex}
+            />
+          )}
         </View>
 
         {!isZoomed && <BottomPanel panValues={panValues} />}

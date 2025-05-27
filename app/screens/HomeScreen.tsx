@@ -5,6 +5,8 @@ import {
   NativeModules,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Animated,
+  Easing,
 } from 'react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import PermissionStatus from '../components/molecules/PermissionsStatus';
@@ -16,6 +18,9 @@ import PageIndicator from '../components/atoms/PageIndicator';
 import Preview from '../components/molecules/Home/Preview';
 import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
+import {withTiming} from 'react-native-reanimated';
+import {useAnimatedStyle} from 'react-native-reanimated';
+import Label from '../components/atoms/Label';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -30,8 +35,39 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   const [isApplied, setIsApplied] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
+  const shakeAnimation = useRef(new Animated.Value(0)).current;
+
   const {OverlayModule} = NativeModules;
   const timer = useRef<NodeJS.Timeout | null>(null);
+
+  const startShakeAnimation = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 8,
+        duration: 30,
+        useNativeDriver: true,
+        easing: Easing.linear,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -8,
+        duration: 30,
+        useNativeDriver: true,
+        easing: Easing.linear,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 8,
+        duration: 30,
+        useNativeDriver: true,
+        easing: Easing.linear,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0,
+        duration: 30,
+        useNativeDriver: true,
+        easing: Easing.linear,
+      }),
+    ]).start();
+  };
 
   const handleEditPress = () => {
     navigation.navigate('Editor', {screenIndex: selectedIndex});
@@ -99,6 +135,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
             isScrolling={isScrolling}
             isSwiping={isSwiping}
             isApplied={isApplied}
+            onPress={startShakeAnimation}
           />
         )}
         initialScrollIndex={screens.selectedIndex}
@@ -126,7 +163,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
             isDisabled={isLoading}
             icon="bag-add"
             isPrimary={false}
-            onPress={() => {}}
+            onPress={() => {
+              navigation.navigate('Shop');
+            }}
           />
           <FabButton
             isDisabled={isLoading}
@@ -135,11 +174,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
             onPress={handleLockPress}
           />
         </View>
-        <FabButton
-          isDisabled={isLoading}
-          icon="brush"
-          onPress={handleEditPress}
-        />
+        <Animated.View
+          style={{
+            transform: [{translateX: shakeAnimation}],
+          }}>
+          <FabButton
+            isDisabled={isLoading}
+            icon="brush"
+            onPress={handleEditPress}
+          />
+        </Animated.View>
       </View>
       <PageIndicator
         selectedIndex={selectedIndex}

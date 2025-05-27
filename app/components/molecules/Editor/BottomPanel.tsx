@@ -495,16 +495,22 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
               isSelected={isLayerSelected}
               label="Layers"
             />
-            <View style={{width: 1, height: '100%', backgroundColor: '#333'}} />
-            <ControlIcon
-              name="refresh"
-              iconStyle={{
-                transform: [{rotate: '90deg'}],
-              }}
-              onPress={handleSelectRotation}
-              isSelected={isRotationSelected}
-              label="Rotate"
-            />
+            {selectedElement.type === 'image' && (
+              <>
+                <View
+                  style={{width: 1, height: '100%', backgroundColor: '#333'}}
+                />
+                <ControlIcon
+                  name="refresh"
+                  iconStyle={{
+                    transform: [{rotate: '90deg'}],
+                  }}
+                  onPress={handleSelectRotation}
+                  isSelected={isRotationSelected}
+                  label="Rotate"
+                />
+              </>
+            )}
             {selectedElement.type === 'image' && (
               <>
                 <View

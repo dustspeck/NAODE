@@ -1,4 +1,10 @@
-import {Image, StyleSheet, View, useWindowDimensions} from 'react-native';
+import {
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Label from '../../atoms/Label';
 import {PREVIEW_IMAGE_RATIO} from '../../../constants/ui';
 import {scale} from 'react-native-size-matters';
@@ -9,6 +15,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useEditorStore} from '../../../services/mmkv';
 import RNFS from 'react-native-fs';
 import {IScreen} from '../../../models/OverlayModel';
+import {AOD_PREVIEW_IMAGE_PATH} from '../../../constants/paths';
 
 interface IPreview {
   isScrolling: boolean;
@@ -17,6 +24,7 @@ interface IPreview {
   item: IScreen;
   index: number;
   totalScreens: number;
+  onPress: () => void;
 }
 
 const Preview = ({
@@ -26,17 +34,18 @@ const Preview = ({
   item,
   index,
   totalScreens,
+  onPress,
 }: IPreview) => {
   const {height, width} = useWindowDimensions();
   const [store] = useEditorStore();
-  
+
   const [previewExists, setPreviewExists] = useState(false);
   const [imageKey, setImageKey] = useState(Date.now());
   const decorationTimer = useRef<NodeJS.Timeout | null>(null);
   const [decorationVisible, setDecorationVisible] = useState(true);
 
   const getPreviewPath = (id: string) => {
-    return `${RNFS.DocumentDirectoryPath}/aod/aodpreview_${id}.jpg`;
+    return `${AOD_PREVIEW_IMAGE_PATH}/aodpreview_${id}.jpg`;
   };
 
   const previewPath = getPreviewPath(item.id);
@@ -135,32 +144,34 @@ const Preview = ({
           />
         </View>
       </View>
-      <View
-        style={[
-          styles.previewContainer,
-          {
-            height: height * PREVIEW_IMAGE_RATIO,
-            width: width * PREVIEW_IMAGE_RATIO,
-          },
-        ]}>
-        {previewExists ? (
-          <Image
-            key={imageKey}
-            source={{uri: `file://${previewPath}?t=${imageKey}`}}
-            style={styles.previewImage}
-            resizeMode="contain"
-          />
-        ) : (
-          <View style={styles.noPreviewContainer}>
-            <Icon name="brush" size={scale(20)} color="#eee5" />
-            <Label text="Customize your AOD" style={styles.noPreviewText} />
-            <Label
-              text="Tap the Edit button to get started"
-              style={styles.noPreviewSubText}
+      <TouchableOpacity activeOpacity={1} onPress={onPress}>
+        <View
+          style={[
+            styles.previewContainer,
+            {
+              height: height * PREVIEW_IMAGE_RATIO,
+              width: width * PREVIEW_IMAGE_RATIO,
+            },
+          ]}>
+          {previewExists ? (
+            <Image
+              key={imageKey}
+              source={{uri: `file://${previewPath}?t=${imageKey}`}}
+              style={styles.previewImage}
+              resizeMode="contain"
             />
-          </View>
-        )}
-      </View>
+          ) : (
+            <View style={styles.noPreviewContainer}>
+              <Icon name="brush" size={scale(20)} color="#eee5" />
+              <Label text="Customize your AOD" style={styles.noPreviewText} />
+              <Label
+                text="Tap the Edit button to get started"
+                style={styles.noPreviewSubText}
+              />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
     </View>
   );
 };
