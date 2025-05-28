@@ -10,6 +10,7 @@ export interface IParentBounds {
 export interface IEditorStore {
   elements: IElement[];
   isEnabled: boolean;
+  brightness: number;
 }
 
 export interface IScreen {

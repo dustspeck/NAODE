@@ -8,6 +8,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
@@ -27,6 +31,7 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
+import androidx.core.graphics.createBitmap
 
 class OverlayAccessibilityService : AccessibilityService() {
     private val TAG = "OverlayAccessibilityService"
@@ -134,7 +139,7 @@ class OverlayAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun loadBitmap(path: String): Bitmap? {
+    private fun loadBitmap(path: String, brightness: Double): Bitmap? {
         if (!validateImagePath(path)) {
             Log.e(TAG, "Invalid image path: $path")
             return null
@@ -146,11 +151,33 @@ class OverlayAccessibilityService : AccessibilityService() {
         return try {
             val options = BitmapFactory.Options().apply {
                 inSampleSize = calculateInSampleSize(path)
-                inPreferredConfig = Bitmap.Config.RGB_565 // Use less memory
+                inPreferredConfig = Bitmap.Config.ARGB_8888 // Use ARGB to preserve transparency
             }
             
-            BitmapFactory.decodeFile(path, options)?.also { bitmap ->
-                bitmapCache.put(path, bitmap)
+            BitmapFactory.decodeFile(path, options)?.let { originalBitmap ->
+                // Create a new bitmap with the same dimensions
+                val adjustedBitmap = createBitmap(originalBitmap.width, originalBitmap.height)
+                
+                // Apply brightness adjustment while preserving transparency
+                val canvas = Canvas(adjustedBitmap)
+                val paint = Paint().apply {
+                    colorFilter = ColorMatrixColorFilter(ColorMatrix().apply {
+                        val b = brightness.toFloat()
+                        val array = FloatArray(20) { 0f }
+                        array[0] = b  // Red
+                        array[6] = b  // Green
+                        array[12] = b // Blue
+                        array[18] = 1f
+                        set(array)
+                    })
+                }
+                
+                canvas.drawBitmap(originalBitmap, 0f, 0f, paint)
+                originalBitmap.recycle() // Free up memory
+                
+                adjustedBitmap.also { bitmap ->
+                    bitmapCache.put(path, bitmap)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error loading bitmap from path: $path", e)
@@ -190,6 +217,10 @@ class OverlayAccessibilityService : AccessibilityService() {
                 val isEnabled = withContext(Dispatchers.IO) {
                     dataStore.isOverlayEnabled()
                 }
+
+                val brightness = withContext(Dispatchers.IO) {
+                    dataStore.getOverlayBrightness()
+                }
                 
                 if (!isEnabled) {
                     Log.d(TAG, "Overlays are disabled, not showing overlays")
@@ -204,7 +235,7 @@ class OverlayAccessibilityService : AccessibilityService() {
                             val selectedIndex = screensStore.optInt("selectedIndex", 0)
                             val imagePath = getSecureFilePath(selectedIndex)
 
-                            val bitmap = loadBitmap(imagePath) ?: return@withContext
+                            val bitmap = loadBitmap(imagePath, brightness) ?: return@withContext
                             
                             val imageView = ImageView(this@OverlayAccessibilityService).apply {
                                 setImageBitmap(bitmap)
