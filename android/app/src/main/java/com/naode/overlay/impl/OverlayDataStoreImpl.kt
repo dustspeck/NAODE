@@ -10,7 +10,9 @@ class OverlayDataStoreImpl(context: Context) : OverlayDataStore {
     private val TAG = "OverlayDataStoreImpl"
     private val mmkvId = "mmkv_id"
     private val editorStoreKey = "EDITOR_STORE"
+    private val screensStoreKey = "SCREENS_STORE"
     private val defaultStoreJSONString = "{\"elements\":[]}"
+    private val defaultScreensStoreJSONString = "{\"selectedIndex\":0,\"screens\":[]}"
     
     private val mmkv: MMKV by lazy {
         try {
@@ -47,6 +49,16 @@ class OverlayDataStoreImpl(context: Context) : OverlayDataStore {
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing overlay elements", e)
             throw e
+        }
+    }
+
+    override fun getScreensStore(): JSONObject {
+        return try {
+            val storeJson = mmkv.getString(screensStoreKey, defaultScreensStoreJSONString)
+            JSONObject(storeJson)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting screens store", e)
+            JSONObject(defaultScreensStoreJSONString)
         }
     }
 

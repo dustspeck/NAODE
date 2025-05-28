@@ -6,41 +6,61 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.LruCache
 import android.view.WindowManager
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
+import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import com.naode.overlay.impl.OverlayDataStoreImpl
 import com.naode.overlay.impl.OverlayStateManagerImpl
 import com.naode.overlay.impl.OverlayViewManagerImpl
 import com.naode.utils.CommonUtil
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
+import kotlinx.coroutines.*
+import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.system.measureTimeMillis
 
 class OverlayAccessibilityService : AccessibilityService() {
     private val TAG = "OverlayAccessibilityService"
     private val mainHandler = Handler(Looper.getMainLooper())
     private val overlayViews = mutableMapOf<String, View>()
     
+    // Use LruCache for better memory management
+    private val bitmapCache = object : LruCache<String, Bitmap>(calculateCacheSize()) {
+        override fun sizeOf(key: String, bitmap: Bitmap): Int {
+            return bitmap.byteCount
+        }
+    }
+
     private lateinit var windowManager: WindowManager
     private lateinit var viewManager: OverlayViewManagerImpl
     private lateinit var dataStore: OverlayDataStoreImpl
     private lateinit var stateManager: OverlayStateManagerImpl
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // Use a custom dispatcher for better performance
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Coroutine error", throwable)
+        recoverService()
+    })
+
     private var isServiceActive = false
+    private val recoveryCounter = AtomicInteger(0)
+    private var lastRecoveryTime = 0L
 
     companion object {
         private const val NOTIFICATION_TIMEOUT = 200L
         private const val SERVICE_RECOVERY_DELAY = 1000L
+        private const val MAX_RECOVERY_ATTEMPTS = 3
+        private const val RECOVERY_COOLDOWN = 5000L
+        private const val CACHE_SIZE_PERCENT = 0.25f // Use 25% of available memory for cache
     }
 
     private val screenStateReceiver = object : BroadcastReceiver() {
@@ -63,13 +83,16 @@ class OverlayAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         try {
-            initializeComponents()
-            registerScreenStateReceiver()
-            stateManager.setServiceActive(true)
-            Log.d(TAG, "Service connected successfully")
+            val time = measureTimeMillis {
+                initializeComponents()
+                registerScreenStateReceiver()
+                initializeService()
+                stateManager.setServiceActive(true)
+            }
+            Log.d(TAG, "Service connected successfully in ${time}ms")
         } catch (e: Exception) {
             Log.e(TAG, "Error in onServiceConnected", e)
-            stopSelf()
+            recoverService()
         }
     }
 
@@ -88,49 +111,137 @@ class OverlayAccessibilityService : AccessibilityService() {
         registerReceiver(screenStateReceiver, filter)
     }
 
+    private fun calculateCacheSize(): Int {
+        val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
+        return (maxMemory * CACHE_SIZE_PERCENT).toInt()
+    }
+
+    private fun getSecureFilePath(index: Int): String {
+        val baseDir = File(filesDir, "aod")
+        if (!baseDir.exists()) {
+            baseDir.mkdirs()
+        }
+        return File(baseDir, "aod_${index + 1}.png").absolutePath
+    }
+
+    private fun validateImagePath(path: String): Boolean {
+        return try {
+            val file = File(path)
+            file.exists() && file.isFile && file.canRead() && file.length() > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error validating image path: $path", e)
+            false
+        }
+    }
+
+    private fun loadBitmap(path: String): Bitmap? {
+        if (!validateImagePath(path)) {
+            Log.e(TAG, "Invalid image path: $path")
+            return null
+        }
+
+        // Check cache first
+        bitmapCache.get(path)?.let { return it }
+
+        return try {
+            val options = BitmapFactory.Options().apply {
+                inSampleSize = calculateInSampleSize(path)
+                inPreferredConfig = Bitmap.Config.RGB_565 // Use less memory
+            }
+            
+            BitmapFactory.decodeFile(path, options)?.also { bitmap ->
+                bitmapCache.put(path, bitmap)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading bitmap from path: $path", e)
+            null
+        }
+    }
+
+    private fun calculateInSampleSize(path: String): Int {
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(path, options)
+        
+        val displayMetrics = resources.displayMetrics
+        val reqWidth = displayMetrics.widthPixels
+        val reqHeight = displayMetrics.heightPixels
+        
+        var inSampleSize = 1
+        if (options.outHeight > reqHeight || options.outWidth > reqWidth) {
+            val halfHeight = options.outHeight / 2
+            val halfWidth = options.outWidth / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
     fun showOverlays() {
         if (!stateManager.isServiceActive() || !stateManager.isScreenOff()) {
             Log.d(TAG, "Service not active or screen is on, not showing overlays")
             return
         }
 
-        if (!dataStore.isOverlayEnabled()) {
-            Log.d(TAG, "Overlays are disabled, not showing overlays")
-            return
-        }
+        serviceScope.launch {
+            try {
+                val isEnabled = withContext(Dispatchers.IO) {
+                    dataStore.isOverlayEnabled()
+                }
+                
+                if (!isEnabled) {
+                    Log.d(TAG, "Overlays are disabled, not showing overlays")
+                    return@launch
+                }
 
-        removeOverlays()
+                withContext(Dispatchers.Main) {
+                    removeOverlays()
+                    try {
+                        val time = measureTimeMillis {
+                            val screensStore = dataStore.getScreensStore()
+                            val selectedIndex = screensStore.optInt("selectedIndex", 0)
+                            val imagePath = getSecureFilePath(selectedIndex)
 
-        try {
-            val elements = dataStore.getOverlayElements()
-            val elementsArray = elements.getJSONArray("elements")
+                            val bitmap = loadBitmap(imagePath) ?: return@withContext
+                            
+                            val imageView = ImageView(this@OverlayAccessibilityService).apply {
+                                setImageBitmap(bitmap)
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                            }
 
-            // Convert to list and sort by zIndex
-            val sortedElements = mutableListOf<JSONObject>()
-            for (i in 0 until elementsArray.length()) {
-                sortedElements.add(elementsArray.getJSONObject(i))
-            }
-            sortedElements.sortBy { it.optInt("zIndex", 0) }
+                            val displayMetrics = resources.displayMetrics
+                            val params = WindowManager.LayoutParams(
+                                displayMetrics.widthPixels,
+                                displayMetrics.heightPixels,
+                                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                                PixelFormat.TRANSLUCENT
+                            ).apply {
+                                gravity = android.view.Gravity.TOP or android.view.Gravity.END
+                                x = 0
+                                y = 0
+                            }
 
-            // Add views in sorted order
-            for (element in sortedElements) {
-                val id = element.getString("id")
-
-                try {
-                    val view = viewManager.createView(element)
-                    val params = viewManager.createLayoutParams(element)
-                    // TODO: Remove this once we have a proper way to handle the width of the text
-                    if (element.getString("type") == "text") params.width += 30
-                    viewManager.addView(view, params)
-                    overlayViews[id] = view
-                    Log.d(TAG, "Added overlay $id")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error creating overlay for element $id", e)
+                            windowManager.addView(imageView, params)
+                            overlayViews["fullscreen_image"] = imageView
+                        }
+                        Log.d(TAG, "Overlay shown in ${time}ms")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error showing full screen image", e)
+                        removeOverlays()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error showing overlays", e)
+                withContext(Dispatchers.Main) {
+                    removeOverlays()
                 }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error showing overlays", e)
-            removeOverlays()
         }
     }
 
@@ -166,7 +277,9 @@ class OverlayAccessibilityService : AccessibilityService() {
             Log.e(TAG, "Error unregistering receiver", e)
         }
         removeOverlays()
+        bitmapCache.evictAll()
         mainHandler.removeCallbacksAndMessages(null)
+        serviceScope.cancel()
         super.onDestroy()
     }
 
@@ -211,6 +324,22 @@ class OverlayAccessibilityService : AccessibilityService() {
     }
 
     private fun recoverService() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastRecoveryTime < RECOVERY_COOLDOWN) {
+            Log.d(TAG, "Recovery cooldown in effect, skipping recovery attempt")
+            return
+        }
+
+        if (recoveryCounter.incrementAndGet() > MAX_RECOVERY_ATTEMPTS) {
+            Log.e(TAG, "Max recovery attempts reached, resetting recovery state")
+            recoveryCounter.set(0)
+            lastRecoveryTime = currentTime
+            reinitializeService()
+            return
+        }
+
+        lastRecoveryTime = currentTime
+        
         serviceScope.launch {
             try {
                 withContext(Dispatchers.Main) {
@@ -218,12 +347,31 @@ class OverlayAccessibilityService : AccessibilityService() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to recover service: ${e.message}")
-                // Attempt to restart the service
                 mainHandler.postDelayed({
-                    val intent = Intent(this@OverlayAccessibilityService, OverlayAccessibilityService::class.java)
-                    startService(intent)
+                    recoverService()
                 }, SERVICE_RECOVERY_DELAY)
             }
         }
     }
-} 
+
+    private fun reinitializeService() {
+        serviceScope.launch {
+            try {
+                withContext(Dispatchers.Main) {
+                    removeOverlays()
+                    bitmapCache.evictAll()
+                    initializeComponents()
+                    initializeService()
+                    recoveryCounter.set(0)
+                    lastRecoveryTime = System.currentTimeMillis()
+                    Log.d(TAG, "Service reinitialized successfully")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to reinitialize service: ${e.message}")
+                mainHandler.postDelayed({
+                    recoverService()
+                }, SERVICE_RECOVERY_DELAY)
+            }
+        }
+    }
+}

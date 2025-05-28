@@ -6,4 +6,5 @@ interface OverlayDataStore {
     fun getOverlayElements(): JSONObject
     fun saveOverlayElements(elements: JSONObject)
     fun clearOverlayElements()
+    fun getScreensStore(): JSONObject
 } 

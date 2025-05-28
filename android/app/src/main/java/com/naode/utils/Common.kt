@@ -14,20 +14,26 @@ import com.naode.overlay.OverlayAccessibilityService
 object CommonUtil {
     fun checkAccessibilityPermission(context: Context): Boolean {
         return try {
-            val serviceName = OverlayAccessibilityService::class.java.name
-            val packageServiceName = context.packageName + "/" + serviceName
-            val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false
-            val colonSplitter = TextUtils.SimpleStringSplitter(':')
+            val fullServiceName = "${context.packageName}/${OverlayAccessibilityService::class.java.name}"
+            val altServiceName = "${context.packageName}/.${OverlayAccessibilityService::class.java.name.removePrefix(context.packageName + ".")}"
 
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: return false
+
+            val colonSplitter = TextUtils.SimpleStringSplitter(':')
             colonSplitter.setString(enabledServices)
 
             while (colonSplitter.hasNext()) {
                 val componentName = colonSplitter.next()
-                if (componentName.equals(packageServiceName, ignoreCase = true)) {
+                if (
+                    componentName.equals(fullServiceName, ignoreCase = true) || componentName.equals(altServiceName, ignoreCase = true)
+                ) {
                     return true
                 }
             }
-            
+
             // Fallback to Settings.Secure check
             val enabledServicesString = Settings.Secure.getString(
                 context.contentResolver,
@@ -38,17 +44,17 @@ object CommonUtil {
             }
 
             colonSplitter.setString(enabledServicesString)
-            
+
             val isEnabledInSettings = colonSplitter.any { componentName ->
-                componentName.equals(packageServiceName, ignoreCase = true)
+                componentName.equals(fullServiceName, ignoreCase = true) || componentName.equals(altServiceName, ignoreCase = true)
             }
-            
+
             if (isEnabledInSettings) {
                 Log.d("CommonUtil", "Accessibility service is enabled via Settings.Secure")
             } else {
                 Log.d("CommonUtil", "Accessibility service is not enabled")
             }
-            
+
             isEnabledInSettings
         } catch (e: Exception) {
             Log.e("CommonUtil", "Error checking accessibility permission: ${e.message}")
