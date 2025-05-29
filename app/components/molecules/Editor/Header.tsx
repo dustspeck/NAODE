@@ -36,6 +36,8 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
   const [isSavingState, setIsSavingState] = useState(false);
   const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
+  const [isIntentionalExit, setIsIntentionalExit] = useState(false);
   const [newName, setNewName] = useState('Unnamed');
   const [preName, setPreName] = useState('Unnamed');
 
@@ -104,8 +106,41 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
 
   const handleBack = () => {
     OverlayModule.triggerTickHaptic();
-    navigation.goBack();
+    if (hasUnsavedChanges) {
+      setIsExitModalVisible(true);
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'Home'}],
+      });
+    }
   };
+
+  const handleExitConfirm = () => {
+    setIsExitModalVisible(false);
+    setIsIntentionalExit(true);
+    navigation.reset({
+      index: 0,
+      routes: [{name: 'Home'}],
+    });
+  };
+
+  const handleExitCancel = () => {
+    setIsExitModalVisible(false);
+  };
+
+  // Handle navigation back gesture
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', e => {
+      if (hasUnsavedChanges && !isExitModalVisible && !isIntentionalExit) {
+        // Prevent default behavior of leaving the screen
+        e.preventDefault();
+        setIsExitModalVisible(true);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, hasUnsavedChanges, isExitModalVisible, isIntentionalExit]);
 
   return (
     <View
@@ -202,6 +237,25 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
         onBackPressed={() => {
           setIsRenameModalVisible(false);
         }}
+      />
+      <ModalWindow
+        heading="Unsaved Changes"
+        content={() => (
+          <View style={{gap: scale(10), paddingHorizontal: scale(10)}}>
+            <Label text="You have unsaved changes. Are you sure you want to exit?" />
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <ActionButton
+                text="Keep"
+                onPress={handleExitCancel}
+                type="Secondary"
+              />
+              <ActionButton text="Discard" onPress={handleExitConfirm} />
+            </View>
+          </View>
+        )}
+        isVisible={isExitModalVisible}
+        onBackPressed={handleExitCancel}
       />
     </View>
   );

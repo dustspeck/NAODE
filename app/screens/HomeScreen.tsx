@@ -19,6 +19,7 @@ import Preview from '../components/molecules/Home/Preview';
 import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
 import BrightnessSliderModal from '../components/molecules/Home/BrightnessSliderModal';
+import { PREVIEW_WIDTH } from '../constants/ui';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -26,7 +27,7 @@ type HomeScreenProps = {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   const {screens, setScreens} = useScreensStore();
-  const [store, setStore] = useEditorStore();
+  const [_store, setStore] = useEditorStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -105,12 +106,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
 
   const onFlatListScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffsetX / scale(320));
-    setSelectedIndex(index);
-    setScreens({
-      ...screens,
-      selectedIndex: index,
-    });
+    const index = Math.round(contentOffsetX / PREVIEW_WIDTH);
+
+    if (index !== selectedIndex) {
+      setSelectedIndex(index);
+      setScreens({
+        ...screens,
+        selectedIndex: index,
+      });
+    }
   };
 
   useEffect(() => {
@@ -143,14 +147,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
         )}
         initialScrollIndex={screens.selectedIndex}
         getItemLayout={(_data, index) => ({
-          length: scale(320),
-          offset: scale(320) * index,
+          length: PREVIEW_WIDTH,
+          offset: PREVIEW_WIDTH * index,
           index,
         })}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{alignSelf: 'flex-start'}}
-        snapToInterval={scale(320)}
+        snapToInterval={PREVIEW_WIDTH}
         snapToAlignment="center"
         disableIntervalMomentum
         decelerationRate={'fast'}

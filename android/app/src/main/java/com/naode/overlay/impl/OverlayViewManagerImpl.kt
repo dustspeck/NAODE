@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
+import android.os.Handler
+import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.WindowManager
@@ -21,6 +23,8 @@ import com.google.android.material.imageview.ShapeableImageView
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import android.graphics.drawable.BitmapDrawable
+import android.view.ViewGroup
 
 class OverlayViewManagerImpl(
     private val context: Context,
@@ -29,6 +33,8 @@ class OverlayViewManagerImpl(
     private val TAG = "OverlayViewManagerImpl"
     private val displayMetrics: DisplayMetrics = context.resources.displayMetrics
     private val dP = displayMetrics.density
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val viewCleanupQueue = mutableListOf<View>()
 
     override fun createView(element: JSONObject): View {
         return when (element.getString("type")) {
@@ -40,18 +46,63 @@ class OverlayViewManagerImpl(
 
     override fun addView(view: View, params: WindowManager.LayoutParams) {
         try {
-            windowManager.addView(view, params)
+            if (view.parent == null) {
+                windowManager.addView(view, params)
+            } else {
+                Log.w(TAG, "View already has a parent, skipping addView")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error adding view", e)
+            cleanupView(view)
             throw e
         }
     }
 
     override fun removeView(view: View) {
         try {
-            windowManager.removeView(view)
+            if (view.parent != null) {
+                windowManager.removeView(view)
+            }
+            cleanupView(view)
         } catch (e: Exception) {
             Log.e(TAG, "Error removing view", e)
+            scheduleViewCleanup(view)
+        }
+    }
+
+    private fun cleanupView(view: View) {
+        try {
+            when (view) {
+                is ImageView -> {
+                    val drawable = view.drawable
+                    if (drawable is BitmapDrawable) {
+                        val bitmap = drawable.bitmap
+                        if (bitmap != null && !bitmap.isRecycled) {
+                            bitmap.recycle()
+                        }
+                    }
+                }
+            }
+            view.visibility = View.GONE
+            if (view is ViewGroup) {
+                view.removeAllViews()
+            }
+            view.destroyDrawingCache()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during view cleanup", e)
+        }
+    }
+
+    private fun scheduleViewCleanup(view: View) {
+        synchronized(viewCleanupQueue) {
+            viewCleanupQueue.add(view)
+        }
+        mainHandler.post {
+            synchronized(viewCleanupQueue) {
+                val viewsToCleanup = viewCleanupQueue.toList()
+                viewCleanupQueue.clear()
+                viewsToCleanup.forEach { cleanupView(it) }
+            }
         }
     }
 
@@ -89,262 +140,6 @@ class OverlayViewManagerImpl(
             Log.d(TAG, "Rotation: ${element.optDouble("rotation", 0.0)}")
         }
     }
-
-//    private fun createTextView(element: JSONObject): View {
-//        val rotationDeg = element.optDouble("rotation", 0.0).toFloat()
-//
-//        val textView = TextView(context).apply {
-//            text = element.getString("text")
-//            textSize = element.getDouble("fontSize").toFloat()
-//
-//            // Strip extra padding
-//            setPadding(0, 0, 0, 0)
-//            setBackgroundColor(Color.RED)
-//            includeFontPadding = false
-//            rotation = rotationDeg
-//
-//            try {
-//                val fontFamily = element.getString("fontFamily")
-//                val typeface = Typeface.createFromAsset(context.assets, "fonts/$fontFamily.ttf")
-//                setTypeface(typeface, when (element.getString("fontWeight")) {
-//                    "bold" -> Typeface.BOLD
-//                    else -> Typeface.NORMAL
-//                })
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error loading font: ${element.optString("fontFamily")}", e)
-//                typeface = when (element.optString("fontWeight")) {
-//                    "bold" -> Typeface.DEFAULT_BOLD
-//                    else -> Typeface.DEFAULT
-//                }
-//            }
-//
-//            try {
-//                setTextColor(element.getString("color").toColorInt())
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error parsing color: ${element.optString("color")}", e)
-//                setTextColor(Color.WHITE)
-//            }
-//
-//            gravity = Gravity.CENTER
-//        }
-//
-//        // Measure tightly
-//        textView.measure(
-//            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-//            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-//        )
-//
-//        val measuredWidth = textView.measuredWidth.toDouble()
-//        val measuredHeight = textView.measuredHeight.toDouble()
-//
-//        // Compute rotated bounding box
-//        val angleRad = Math.toRadians(rotationDeg.toDouble())
-//        val rotatedW = abs(measuredWidth * cos(angleRad)) + abs(measuredHeight * sin(angleRad))
-//        val rotatedH = abs(measuredWidth * sin(angleRad)) + abs(measuredHeight * cos(angleRad))
-//
-//        textView.layoutParams = FrameLayout.LayoutParams(
-//            measuredWidth.toInt(),
-//            measuredHeight.toInt(),
-//            Gravity.CENTER
-//        )
-//
-//        return FrameLayout(context).apply {
-//            layoutParams = FrameLayout.LayoutParams(rotatedW.toInt(), rotatedH.toInt())
-//            addView(textView)
-////            rotation = rotationDeg
-//            clipChildren = false
-//            clipToPadding = false
-//            setBackgroundColor(Color.BLUE)
-//        }
-//    }
-
-//    private fun createTextView(element: JSONObject): View {
-//        val rotationDeg = element.optDouble("rotation", 0.0).toFloat()
-//        val fontSize = element.getDouble("fontSize").toFloat()
-//        val text = element.getString("text")
-//        val fontWeight = element.optString("fontWeight", "normal")
-//        val fontFamily = element.optString("fontFamily", "")
-//        val color = element.optString("color", "#FFFFFF")
-//
-//        val paint = Paint().apply {
-//            isAntiAlias = true
-//            textSize = fontSize * context.resources.displayMetrics.scaledDensity
-//            typeface = try {
-//                Typeface.createFromAsset(context.assets, "fonts/$fontFamily.ttf").let {
-//                    if (fontWeight == "bold") Typeface.create(it, Typeface.BOLD) else it
-//                }
-//            } catch (e: Exception) {
-//                if (fontWeight == "bold") Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-//            }
-//        }
-//
-//        val bounds = Rect()
-//        paint.getTextBounds(text, 0, text.length, bounds)
-//        val textWidth = bounds.width().toDouble()
-//        val textHeight = bounds.height().toDouble()
-//
-//        // Rotated bounding box
-//        val angleRad = Math.toRadians(rotationDeg.toDouble())
-//        val rotatedW = abs(textWidth * cos(angleRad)) + abs(textHeight * sin(angleRad))
-//        val rotatedH = abs(textWidth * sin(angleRad)) + abs(textHeight * cos(angleRad))
-//
-//        val textView = TextView(context).apply {
-//            this.text = text
-//            this.textSize = fontSize
-//            setTextColor(color.toColorInt())
-//
-//            setPadding(0, 0, 0, 0)
-//            includeFontPadding = false
-//            gravity = Gravity.CENTER
-//
-//            try {
-//                val tf = Typeface.createFromAsset(context.assets, "fonts/$fontFamily.ttf")
-//                typeface = if (fontWeight == "bold") Typeface.create(tf, Typeface.BOLD) else tf
-//            } catch (e: Exception) {
-//                typeface = if (fontWeight == "bold") Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-//            }
-//
-//            layoutParams = FrameLayout.LayoutParams(
-//                textWidth.toInt(),
-//                textHeight.toInt(),
-//                Gravity.CENTER
-//            )
-//        }
-//
-//        return FrameLayout(context).apply {
-//            layoutParams = FrameLayout.LayoutParams(rotatedW.toInt(), rotatedH.toInt())
-//            addView(textView)
-//            rotation = rotationDeg
-//            clipChildren = false
-//            clipToPadding = false
-//        }
-//    }
-
-//    private fun createTextView(element: JSONObject): View {
-//        val textView = TextView(context).apply {
-//            text = element.getString("text")
-//            textSize = element.getDouble("fontSize").toFloat()
-//            setBackgroundColor(Color.RED)
-//
-//            // Set font family and weight
-//            try {
-//                val fontFamily = element.getString("fontFamily")
-//                val typeface = Typeface.createFromAsset(context.assets, "fonts/$fontFamily.ttf")
-//                setTypeface(typeface, when (element.getString("fontWeight")) {
-//                    "bold" -> Typeface.BOLD
-//                    else -> Typeface.NORMAL
-//                })
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error loading font: ${element.optString("fontFamily")}", e)
-//                typeface = when (element.optString("fontWeight")) {
-//                    "bold" -> Typeface.DEFAULT_BOLD
-//                    else -> Typeface.DEFAULT
-//                }
-//            }
-//
-//            // Set text color
-//            try {
-//                setTextColor(element.getString("color").toColorInt())
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error parsing color: ${element.optString("color")}", e)
-//                setTextColor(Color.WHITE)
-//            }
-//
-//            // Optional styling
-//            gravity = Gravity.CENTER
-//        }
-//
-//        // Extract original size (in dp)
-//        val size = element.getJSONObject("size")
-//        val width = size.getDouble("width") * dP
-//        val height = size.getDouble("height") * dP
-//        val textSize = element.getDouble("fontSize").toFloat()
-//
-//        // Rotation
-//        val rotationDeg = element.optDouble("rotation", 0.0).toFloat()
-//        val angle = Math.toRadians(rotationDeg.toDouble())
-//        val rotatedW = abs(width * cos(angle)) + abs(height * sin(angle))
-//        val rotatedH = abs(width * sin(angle)) + abs(height * cos(angle))
-//
-//        textView.rotation = rotationDeg
-//
-////        textView.layoutParams = FrameLayout.LayoutParams(width.toInt(), height.toInt(), Gravity.CENTER)
-//        textView.layoutParams = FrameLayout.LayoutParams(width.toInt(), (textSize * dP).toInt(), Gravity.CENTER)
-//
-//        return FrameLayout(context).apply {
-////            layoutParams = FrameLayout.LayoutParams(rotatedW.toInt(), rotatedH.toInt())
-//            layoutParams = FrameLayout.LayoutParams(rotatedW.toInt(), textSize.toInt())
-//
-//            addView(textView)
-//            clipChildren = false
-//            clipToPadding = false
-//            setBackgroundColor(Color.BLUE)
-//            setPadding(0, 0, 0, 0,)
-//        }
-//    }
-
-//    private fun createTextView(element: JSONObject): View {
-//        val rotationDeg = element.optDouble("rotation", 0.0).toFloat()
-//
-//        val textView = TextView(context).apply {
-//            text = element.getString("text")
-//            textSize = element.getDouble("fontSize").toFloat()
-//            setBackgroundColor(Color.RED)
-//
-//            try {
-//                val fontFamily = element.getString("fontFamily")
-//                val typeface = Typeface.createFromAsset(context.assets, "fonts/$fontFamily.ttf")
-//                setTypeface(typeface, when (element.getString("fontWeight")) {
-//                    "bold" -> Typeface.BOLD
-//                    else -> Typeface.NORMAL
-//                })
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error loading font: ${element.optString("fontFamily")}", e)
-//                typeface = when (element.optString("fontWeight")) {
-//                    "bold" -> Typeface.DEFAULT_BOLD
-//                    else -> Typeface.DEFAULT
-//                }
-//            }
-//            try {
-//                setTextColor(element.getString("color").toColorInt())
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error parsing color: ${element.optString("color")}", e)
-//                setTextColor(Color.WHITE)
-//            }
-//
-//            // Optional formatting
-//            gravity = Gravity.CENTER
-//        }
-//
-//        // Step 1: Measure the TextView
-//        textView.measure(
-//            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-//            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-//        )
-////        val width = textView.measuredWidth.toDouble()
-////        val height = textView.measuredHeight.toDouble()
-//
-//        // Step 2: Compute rotated bounding box
-////        val angle = Math.toRadians(rotationDeg.toDouble())
-////        val rotatedW = abs(width * cos(angle)) + abs(height * sin(angle))
-////        val rotatedH = abs(width * sin(angle)) + abs(height * cos(angle))
-//
-//        // Step 3: Apply layout and container
-////        textView.layoutParams = FrameLayout.LayoutParams(width.toInt(), height.toInt(), Gravity.CENTER)
-//
-////        return textView
-//
-//        return FrameLayout(context).apply {
-////            layoutParams = FrameLayout.LayoutParams(rotatedW.toInt(), rotatedH.toInt())
-//            layoutParams = FrameLayout.LayoutParams(width.toInt(), height.toInt())
-//            addView(textView)
-//            rotation = rotationDeg
-//            clipChildren = false
-//            clipToPadding = false
-//            setBackgroundColor(Color.BLUE)
-//            setPadding(0, 0, 0, 0)
-//        }
-//    }
 
     private fun createImageView(element: JSONObject): View {
         val size = element.getJSONObject("size")

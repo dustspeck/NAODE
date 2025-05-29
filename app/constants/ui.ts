@@ -2,6 +2,7 @@ import {CaptureOptions} from 'react-native-view-shot';
 import {ImageLibraryOptions} from 'react-native-image-picker';
 import {getRandomString} from '../utils/common';
 import {USER_IMAGES_PATH} from './paths';
+import { scale } from 'react-native-size-matters';
 
 export const EDIT_WINDOW_RATIO = 0.78;
 export const EDIT_CONTROLS_RATIO = (1 - EDIT_WINDOW_RATIO) / 2;
@@ -10,6 +11,7 @@ export const MAX_FONT_SIZE = 300;
 export const MIN_FONT_SIZE = 10;
 export const DEFAULT_FONT_SIZE = 30;
 export const PREVIEW_IMAGE_RATIO = 0.6;
+export const PREVIEW_WIDTH = scale(320);
 
 export const FONTS = [
   {name: 'Roboto Regular', fontFamily: 'RobotoRegular'},

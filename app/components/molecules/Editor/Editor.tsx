@@ -141,8 +141,14 @@ const Editor: React.FC<EditorProps> = React.memo(
     const [isDebugEnabled, setIsDebugEnabled] = useState(false);
 
     useEffect(() => {
-      updateElements(store.elements);
-    }, []);
+      let mounted = true;
+      if (mounted) {
+        updateElements(store.elements);
+      }
+      return () => {
+        mounted = false;
+      };
+    }, [store.elements, updateElements]);
 
     // Clean up panValues when elements are deleted
     useEffect(() => {

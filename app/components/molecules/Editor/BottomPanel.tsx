@@ -489,7 +489,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             <BottomPanelOverhead>
               <Label
                 style={{width: scale(30)}}
-                text={`${selectedElement.opacity * 100}%`}
+                text={`${(selectedElement.opacity * 100).toFixed(0)}%`}
               />
               <Slider
                 value={selectedElement.opacity}
