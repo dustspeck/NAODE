@@ -275,6 +275,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
         top: 0,
         left: 0,
         zIndex: image.zIndex,
+        opacity: image.opacity,
       }),
       [
         animatedSize,
@@ -284,6 +285,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
         image.zIndex,
         image.rotation,
         panValues,
+        image.opacity,
       ],
     );
 
@@ -308,6 +310,7 @@ const CustomImage: React.FC<CustomImageProps> = React.memo(
             height: '100%',
             resizeMode: 'contain',
             borderRadius,
+            opacity: image.opacity,
           }}
         />
         {isSelected && !isZoomed && (

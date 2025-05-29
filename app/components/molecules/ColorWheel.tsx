@@ -4,9 +4,11 @@ import ColorPicker, {
   HueCircular,
   Panel1,
   InputWidget,
+  OpacitySlider,
 } from 'reanimated-color-picker';
 import {runOnJS} from 'react-native-reanimated';
 import {scale} from 'react-native-size-matters';
+import Label from '../atoms/Label';
 
 interface ColorWheelProps {
   value: string;
@@ -45,9 +47,12 @@ const ColorWheel = ({value, onChange}: ColorWheelProps) => {
             iconColor="#707070"
           />
         </View>
+        <Label text="Hue" size={16} />
         <HueCircular containerStyle={styles.hueContainer} thumbShape="pill">
           <Panel1 style={styles.panelStyle} />
         </HueCircular>
+        <Label text="Opacity" size={16} />
+        <OpacitySlider adaptSpectrum thumbShape="pill" style={styles.opacitySlider} />
         <View
           style={{
             flex: 1,
@@ -105,6 +110,9 @@ const styles = StyleSheet.create({
     marginVertical: scale(10),
     borderWidth: scale(1),
     borderColor: '#fff',
+  },
+  opacitySlider: {
+    marginTop: scale(10),
   },
 });
 

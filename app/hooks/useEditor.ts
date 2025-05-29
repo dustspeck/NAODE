@@ -26,6 +26,7 @@ export const useEditor = () => {
         name: `${elements.length + 1} Image`,
         type: 'image',
         borderRadius: 0,
+        opacity: 1,
       };
       setElements(prevElements => [...prevElements, newElement]);
     },

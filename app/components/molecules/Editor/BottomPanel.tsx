@@ -40,7 +40,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false);
   const [isTextValueSelected, setIsTextValueSelected] = useState(false);
   const [isFontSelected, setIsFontSelected] = useState(false);
-
+  const [isOpacitySelected, setIsOpacitySelected] = useState(false);
   useEffect(() => {
     deselectAll();
   }, [selectedElementId]);
@@ -55,6 +55,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     setIsCenterSelected(false);
     setIsRadiusSelected(false);
     setIsFontSelected(false);
+    setIsOpacitySelected(false);
   };
 
   const handleSelectRotation = () => {
@@ -223,6 +224,17 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const handleFontChange = (fontFamily: string) => {
     if (selectedElementId) {
       handleUpdateText(selectedElementId, {fontFamily});
+    }
+  };
+
+  const handleSelectOpacity = () => {
+    deselectAll();
+    setIsOpacitySelected(!isOpacitySelected);
+  };
+
+  const handleOpacityChange = (value: number[]) => {
+    if (selectedElementId) {
+      handleUpdateImage(selectedElementId, {opacity: value[0]});
     }
   };
 
@@ -473,6 +485,29 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
               />
             </BottomPanelOverhead>
           )}
+          {isOpacitySelected && selectedElement.type === 'image' && (
+            <BottomPanelOverhead>
+              <Label
+                style={{width: scale(30)}}
+                text={`${selectedElement.opacity * 100}%`}
+              />
+              <Slider
+                value={selectedElement.opacity}
+                onValueChange={handleOpacityChange}
+                minimumValue={0}
+                maximumValue={1}
+                step={0.01}
+                trackStyle={{
+                  height: scale(2),
+                  width: scale(100),
+                }}
+                thumbTintColor="#fff"
+                minimumTrackTintColor="#fff"
+                maximumTrackTintColor="#333"
+                trackClickable={false}
+              />
+            </BottomPanelOverhead>
+          )}
           <View
             style={{
               flexDirection: 'row',
@@ -516,6 +551,19 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                   onPress={handleSelectRadius}
                   isSelected={isRadiusSelected}
                   label="Radius"
+                />
+              </>
+            )}
+            {selectedElement.type === 'image' && (
+              <>
+                <View
+                  style={{width: 1, height: '100%', backgroundColor: '#333'}}
+                />
+                <ControlIcon
+                  name="eye-outline"
+                  onPress={handleSelectOpacity}
+                  isSelected={isOpacitySelected}
+                  label="Opacity"
                 />
               </>
             )}

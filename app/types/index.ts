@@ -9,6 +9,7 @@ export interface ImageData {
   name: string;
   type: 'image';
   borderRadius: number;
+  opacity: number;
 }
 
 export interface TextData {
