@@ -1,12 +1,12 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {View, AppState, NativeModules, BackHandler} from 'react-native';
-
 import ModalWindow from '../molecules/ModalWindow';
 import ActionListItem from '../../components/atoms/ActionListItem';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Label from '../atoms/Label';
 import {scale} from 'react-native-size-matters';
 import {useEditorStore} from '../../services/mmkv';
+import {MOTIVATIONAL_MESSAGES} from '../../constants/ui';
 
 function PermissionStatus(): React.JSX.Element | null {
   const {OverlayModule} = NativeModules;
@@ -82,11 +82,15 @@ function PermissionStatus(): React.JSX.Element | null {
     isLoading: boolean | undefined;
     isEnabled: boolean | undefined;
   }) => {
+    const [message] = useState(() => 
+      MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)]
+    );
+
     return (
       <View style={{flexDirection: 'row', alignContent: 'center'}}>
         <Icon
           name={
-            isLoading ? 'time-outline' : isEnabled ? 'checkmark' : 'alert'
+            isLoading ? 'time-outline' : isEnabled ? 'checkmark-done' : 'alert'
           }
           style={{
             fontSize: scale(16),
@@ -99,7 +103,7 @@ function PermissionStatus(): React.JSX.Element | null {
             isLoading
               ? 'Please provide required permissions'
               : isEnabled
-              ? 'Everything looks good!'
+              ? message
               : 'AOD is disabled'
           }
           style={{color: '#999'}}

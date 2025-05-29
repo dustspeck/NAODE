@@ -69,3 +69,13 @@ export const getUserImageURI = (uri: string) => {
   const newPath = `${USER_IMAGES_PATH}/${newFilename}`;
   return `file://${newPath}`;
 };
+
+export const MOTIVATIONAL_MESSAGES = [
+  "All set to create amazing designs!",
+  "Your creative journey begins now!",
+  "Ready to make magic happen!",
+  "Your creative space is ready!",
+  "Time to unleash your creativity!",
+  "All set for greatness!",
+  "Ready to make your mark!"
+];
