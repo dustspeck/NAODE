@@ -11,7 +11,6 @@ import {
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import PermissionStatus from '../components/molecules/PermissionsStatus';
 import {scale} from 'react-native-size-matters';
-import StatusBarView from '../components/atoms/StatusBarView';
 import {FlatList} from 'react-native';
 import FabButton from '../components/atoms/FabButton';
 import PageIndicator from '../components/atoms/PageIndicator';
@@ -20,6 +19,7 @@ import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
 import BrightnessSliderModal from '../components/molecules/Home/BrightnessSliderModal';
 import {PREVIEW_WIDTH} from '../constants/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -39,6 +39,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
 
   const {OverlayModule} = NativeModules;
   const timer = useRef<NodeJS.Timeout | null>(null);
+  const insets = useSafeAreaInsets();
 
   const startShakeAnimation = useCallback(() => {
     Animated.sequence([
@@ -126,8 +127,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   }, [isApplied, isScrolling, isSwiping]);
 
   return (
-    <View style={styles.mainContainer}>
-      <StatusBarView color="black" />
+    <View
+      style={[
+        styles.mainContainer,
+        {paddingBottom: insets.bottom + scale(5), paddingTop: insets.top},
+      ]}>
       <Header />
       <PermissionStatus />
 
@@ -217,7 +221,6 @@ const styles = StyleSheet.create({
     minHeight: '100%',
     backgroundColor: '#000',
     paddingHorizontal: scale(16),
-    paddingBottom: scale(5),
   },
   fabContainer: {
     position: 'absolute',

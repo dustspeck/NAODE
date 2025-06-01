@@ -1,11 +1,11 @@
 import React, {useRef, useEffect, useMemo, useCallback, useState} from 'react';
 import {
   Animated,
-  useWindowDimensions,
   BackHandler,
   ViewStyle,
   View,
   TouchableWithoutFeedback,
+  Dimensions,
 } from 'react-native';
 import ZoomOutIcon from '../../atoms/ZoomOutIcon';
 import {useEditorContext} from '../../../context/EditorContext';
@@ -36,7 +36,7 @@ const FullScreenControls = ({
   isZoomed: boolean;
   setIsZoomed: (isZoomed: boolean) => void;
 }) => {
-  const {height} = useWindowDimensions();
+  const {height} = Dimensions.get('screen');
   if (!isZoomed) return null;
   return (
     <View
@@ -135,7 +135,7 @@ const Editor: React.FC<EditorProps> = React.memo(
       handleUpdateText,
       updateElements,
     } = useEditorContext();
-    const {width, height} = useWindowDimensions();
+    const {width, height} = Dimensions.get('screen');
     const [store] = useEditorStore();
     const backHandlerRef = useRef<{remove: () => void} | null>(null);
     const [isDebugEnabled, setIsDebugEnabled] = useState(false);

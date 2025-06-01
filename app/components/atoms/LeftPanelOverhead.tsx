@@ -1,4 +1,4 @@
-import {View, useWindowDimensions} from 'react-native';
+import {View} from 'react-native';
 import {scale} from 'react-native-size-matters';
 
 interface ILeftPanelOverheadProps {
@@ -6,7 +6,6 @@ interface ILeftPanelOverheadProps {
 }
 
 const LeftPanelOverhead = ({children}: ILeftPanelOverheadProps) => {
-  const {width, height} = useWindowDimensions();
   return (
     <View
       style={{

@@ -3,7 +3,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  useWindowDimensions,
+  Dimensions,
 } from 'react-native';
 import Label from '../../atoms/Label';
 import {PREVIEW_IMAGE_RATIO} from '../../../constants/ui';
@@ -36,7 +36,7 @@ const Preview = ({
   totalScreens,
   onPress,
 }: IPreview) => {
-  const {height, width} = useWindowDimensions();
+  const {height, width} = Dimensions.get('screen');
   const [store] = useEditorStore();
 
   const [previewExists, setPreviewExists] = useState(false);

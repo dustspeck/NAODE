@@ -239,13 +239,17 @@ class OverlayAccessibilityService : AccessibilityService() {
                             
                             val imageView = ImageView(this@OverlayAccessibilityService).apply {
                                 setImageBitmap(bitmap)
-                                scaleType = ImageView.ScaleType.FIT_CENTER
+                                scaleType = ImageView.ScaleType.FIT_XY
                             }
 
                             val displayMetrics = resources.displayMetrics
+                            val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+                            val realMetrics = android.util.DisplayMetrics()
+                            windowManager.defaultDisplay.getRealMetrics(realMetrics)
+                            
                             val params = WindowManager.LayoutParams(
                                 displayMetrics.widthPixels,
-                                displayMetrics.heightPixels,
+                                realMetrics.heightPixels,
                                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or

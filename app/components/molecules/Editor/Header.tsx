@@ -1,4 +1,9 @@
-import {TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {
+  ActivityIndicator,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
 import IconPill from '../../atoms/IconPill';
 import Label from '../../atoms/Label';
@@ -18,6 +23,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import {NativeModules} from 'react-native';
 import TextBox from '../../atoms/TextBox';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const {OverlayModule} = NativeModules;
 
@@ -27,6 +33,7 @@ interface IHeaderProps {
 }
 
 const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
+  const insets = useSafeAreaInsets();
   const {width, height} = useWindowDimensions();
   const navigation = useNavigation();
   const {elements, setSelectedElementId} = useEditorContext();
@@ -68,6 +75,7 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
   const handleSaveModal = () => {
     OverlayModule.triggerTickHaptic();
     setIsSaveModalVisible(!isSaveModalVisible);
+    saveChanges();
   };
 
   const handleRenameModal = () => {
@@ -81,9 +89,9 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
     setStore({elements});
     setScreens(updateScreen(screens.screens, screenIndex, elements));
     saveImage(screens.screens[screenIndex].id);
-    setIsSaveModalVisible(false);
     setTimeout(() => {
       setIsSavingState(false);
+      setIsSaveModalVisible(false);
     }, 1000);
   }, [elements, setStore, saveImage, screenIndex, screens.screens]);
 
@@ -151,6 +159,7 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
         justifyContent: 'space-between',
         flexDirection: 'row',
         paddingHorizontal: scale(10),
+        marginTop: insets.top,
       }}>
       <View style={{width: scale(50)}}>
         <IconPill icon="chevron-back" onPress={handleBack} />
@@ -183,30 +192,18 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
       </View>
       <ModalWindow
         content={() => (
-          <View style={{gap: scale(10), paddingHorizontal: scale(10)}}>
-            <Label
-              text="You have unsaved changes."
-              hasWarning={hasUnsavedChanges}
-            />
-            <ActionButton
-              text="Save AOD"
-              type="Secondary"
-              onPress={saveChanges}
-            />
-            <ActionButton text="Save & Apply AOD" onPress={saveChanges} />
+          <View
+            style={{
+              gap: scale(20),
+              paddingHorizontal: scale(10),
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Label text="Saving changes" style={{fontSize: scale(7)}} />
           </View>
         )}
-        headerContent={() => (
-          <View style={{alignItems: 'flex-end'}}>
-            <Icon
-              name="close"
-              size={20}
-              color="white"
-              onPress={handleSaveModal}
-            />
-          </View>
-        )}
-        heading="Save or Apply?"
+        heading="Please wait"
         isVisible={isSaveModalVisible}
         onBackPressed={() => {}}
       />
