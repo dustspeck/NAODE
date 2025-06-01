@@ -184,8 +184,6 @@ const styles = StyleSheet.create({
     marginBottom: scale(20),
     marginTop: scale(10),
     borderWidth: 3,
-    borderTopWidth: 10,
-    borderBottomWidth: 10,
     borderColor: '#6665',
     borderRadius: scale(10),
     overflow: 'hidden',

@@ -1,6 +1,7 @@
 import RNFS from 'react-native-fs';
 import {AOD_IMAGE_PATH} from '../constants/paths';
 import {handleError, createError} from './errorHandling';
+import {getStickerURI} from './common';
 
 export const ensureDirectoryExists = async (path: string): Promise<void> => {
   try {
@@ -57,11 +58,21 @@ export const deleteImage = async (path: string): Promise<void> => {
   }
 };
 
-export const copyImage = async (sourcePath: string, targetPath: string): Promise<void> => {
+export const copyImage = async (
+  sourcePath: string,
+  targetPath: string,
+): Promise<void> => {
   try {
     await RNFS.copyFile(sourcePath, targetPath);
   } catch (error) {
-    handleError(error, 'Storage:copyFile', createError('Failed to copy file', 'FILE_COPY_ERROR', {sourcePath, targetPath}));
+    handleError(
+      error,
+      'Storage:copyFile',
+      createError('Failed to copy file', 'FILE_COPY_ERROR', {
+        sourcePath,
+        targetPath,
+      }),
+    );
     throw error;
   }
 };

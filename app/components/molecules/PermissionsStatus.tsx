@@ -14,6 +14,12 @@ function PermissionStatus(): React.JSX.Element | null {
   const [permissionsUpdated, setPermissionsUpdated] = useState(false);
   const [accessibilityPermission, setAccessibilityPermission] = useState(false);
   const [store] = useEditorStore();
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const updateStatusMessage = () => {
+    const message = MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
+    setStatusMessage(message);
+  };
 
   useEffect(() => {
     updatePermissionStates();
@@ -35,6 +41,7 @@ function PermissionStatus(): React.JSX.Element | null {
     setAccessibilityPermission(accessibilityGranted);
 
     setPermissionsUpdated(true);
+    updateStatusMessage();
   };
 
   const requestAccessibilityPermission = () => {
@@ -82,10 +89,6 @@ function PermissionStatus(): React.JSX.Element | null {
     isLoading: boolean | undefined;
     isEnabled: boolean | undefined;
   }) => {
-    const [message] = useState(() => 
-      MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)]
-    );
-
     return (
       <View style={{flexDirection: 'row', alignContent: 'center'}}>
         <Icon
@@ -103,7 +106,7 @@ function PermissionStatus(): React.JSX.Element | null {
             isLoading
               ? 'Please provide required permissions'
               : isEnabled
-              ? message
+              ? statusMessage
               : 'AOD is disabled'
           }
           style={{color: '#999'}}

@@ -31,7 +31,7 @@ const FabButton: React.FC<IFabButtonProps> = ({
       <Icon
         name={icon}
         size={scale(isPrimary ? 20 : 16)}
-        color={isPrimary ? '#333' : '#aaa'}
+        color={isPrimary ? '#222' : '#aaa'}
       />
     </TouchableOpacity>
   );
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     height: scale(50),
     width: scale(50),
     backgroundColor: '#bbb',
-    borderRadius: scale(12),
+    borderRadius: scale(18),
     justifyContent: 'center',
     alignItems: 'center',
   },

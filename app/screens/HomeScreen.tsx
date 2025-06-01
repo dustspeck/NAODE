@@ -19,7 +19,7 @@ import Preview from '../components/molecules/Home/Preview';
 import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
 import BrightnessSliderModal from '../components/molecules/Home/BrightnessSliderModal';
-import { PREVIEW_WIDTH } from '../constants/ui';
+import {PREVIEW_WIDTH} from '../constants/ui';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -168,14 +168,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
         <View style={styles.fabSecondaryContainer}>
           <FabButton
             isDisabled={isLoading}
-            icon="bag-add"
-            isPrimary={false}
-            onPress={() => {
-              navigation.navigate('Shop');
-            }}
-          />
-          <FabButton
-            isDisabled={isLoading}
             icon="lock-closed"
             isPrimary={false}
             onPress={handleLockPress}
@@ -185,6 +177,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
             icon="sunny"
             isPrimary={false}
             onPress={handleBrightnessPress}
+          />
+          <FabButton
+            isDisabled={isLoading}
+            icon="ellipsis-horizontal"
+            isPrimary={false}
+            onPress={() => {
+              navigation.navigate('Shop');
+            }}
           />
         </View>
         <Animated.View

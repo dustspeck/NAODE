@@ -99,4 +99,9 @@ object CommonUtil {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         context.startService(intent)
     }
+
+    fun getImageName(uri: String): String {
+        val name = uri.split('/').last().split('.').first()
+        return name
+    }
 }

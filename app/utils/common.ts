@@ -1,4 +1,5 @@
 import {IElement, IScreensStore} from '../models/OverlayModel';
+import { USER_IMAGES_PATH } from '../constants/paths';
 
 export function isEqual(a: any, b: any) {
   if (a === b) return true;
@@ -86,4 +87,17 @@ export function updateScreen(
 
 export function getRandomString() {
   return Math.random().toString(36).substring(7);
+}
+
+export function getImageName(uri: string) {
+  return uri.split('/').pop()?.split('.')[0];
+}
+
+export function getStickerURI(uri: string) {
+  const imageName = getImageName(uri);
+  return `file://${USER_IMAGES_PATH}/${imageName}_sticker.png`;
+}
+
+export function isStickerURI(uri: string) {
+  return uri.includes('_sticker.png');
 }

@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
+  NativeModules,
+  ToastAndroid,
 } from 'react-native';
 import {EDIT_CONTROLS_RATIO, FONTS} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
@@ -18,6 +20,7 @@ import ModalWindow from '../ModalWindow';
 import {ElementData} from '../../../types';
 import ColorWheel from '../ColorWheel';
 import TextBox from '../../atoms/TextBox';
+import {getStickerURI, isStickerURI} from '../../../utils/common';
 
 interface BottomPanelProps {
   panValues: {[key: string]: Animated.ValueXY};
@@ -33,6 +36,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     sendToBack,
   } = useEditorContext();
   const {width, height} = useWindowDimensions();
+  const {OverlayModule} = NativeModules;
   const [isRotationSelected, setIsRotationSelected] = useState(false);
   const [isLayerSelected, setIsLayerSelected] = useState(false);
   const [isCenterSelected, setIsCenterSelected] = useState(false);
@@ -41,6 +45,8 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const [isTextValueSelected, setIsTextValueSelected] = useState(false);
   const [isFontSelected, setIsFontSelected] = useState(false);
   const [isOpacitySelected, setIsOpacitySelected] = useState(false);
+  const [isRemoveBackgroundLoading, setIsRemoveBackgroundLoading] =
+    useState(false);
   useEffect(() => {
     deselectAll();
   }, [selectedElementId]);
@@ -235,6 +241,50 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const handleOpacityChange = (value: number[]) => {
     if (selectedElementId) {
       handleUpdateImage(selectedElementId, {opacity: value[0]});
+    }
+  };
+
+  const handleRemoveBackground = async () => {
+    setIsRemoveBackgroundLoading(true);
+    if (
+      selectedElementId &&
+      selectedElement &&
+      selectedElement.type === 'image' &&
+      'uri' in selectedElement
+    ) {
+      OverlayModule.triggerTickHaptic();
+      try {
+        const imageURI = selectedElement.uri;
+        const stickerExists = isStickerURI(imageURI);
+        if (stickerExists) {
+          ToastAndroid.show(
+            'Background already removed, please select another image',
+            ToastAndroid.SHORT,
+          );
+          return;
+        }
+        const stickerURI = getStickerURI(imageURI);
+        const result = await OverlayModule.removeBackground(imageURI);
+        if (result) {
+          handleUpdateImage(selectedElementId, {
+            uri: stickerURI,
+          });
+          ToastAndroid.show('Background removed', ToastAndroid.SHORT);
+        } else {
+          ToastAndroid.show(
+            'Error removing background, please try again',
+            ToastAndroid.SHORT,
+          );
+        }
+      } catch (error) {
+        console.error('Error removing background:', error);
+        ToastAndroid.show(
+          'Error removing background, please try again',
+          ToastAndroid.SHORT,
+        );
+      } finally {
+        setIsRemoveBackgroundLoading(false);
+      }
     }
   };
 
@@ -564,6 +614,23 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                   onPress={handleSelectOpacity}
                   isSelected={isOpacitySelected}
                   label="Opacity"
+                />
+              </>
+            )}
+            {selectedElement.type === 'image' && (
+              <>
+                <View
+                  style={{width: 1, height: '100%', backgroundColor: '#333'}}
+                />
+                <ControlIcon
+                  name={
+                    isRemoveBackgroundLoading
+                      ? 'time-outline'
+                      : 'person-outline'
+                  }
+                  onPress={handleRemoveBackground}
+                  isSelected={isRemoveBackgroundLoading}
+                  label="Cutout"
                 />
               </>
             )}
