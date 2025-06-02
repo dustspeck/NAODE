@@ -80,24 +80,22 @@ export const useEditor = () => {
 
   const handleDeleteElement = useCallback(
     (id: string) => {
-      setElements(prevElements => {
-        // Find the element being deleted
-        const deletedElement = prevElements.find(element => element.id === id);
-        
-        // If it's an image element, clean up its file
-        if (deletedElement?.type === 'image') {
-          cleanupImage(deletedElement.uri);
-        }
-        
-        // Return the filtered elements
-        return prevElements.filter(element => element.id !== id);
-      });
+      // Find the element being deleted before state update
+      const deletedElement = elements.find(element => element.id === id);
+      
+      // If it's an image element, clean up its file
+      if (deletedElement?.type === 'image') {
+        cleanupImage(deletedElement.uri);
+      }
+      
+      // Update state after cleanup
+      setElements(prevElements => prevElements.filter(element => element.id !== id));
       
       if (selectedElementId === id) {
         setSelectedElementId(null);
       }
     },
-    [selectedElementId],
+    [selectedElementId, elements],
   );
 
   const bringToFront = useCallback((id: string) => {

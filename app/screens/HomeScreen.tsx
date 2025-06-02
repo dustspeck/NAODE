@@ -17,7 +17,6 @@ import PageIndicator from '../components/atoms/PageIndicator';
 import Preview from '../components/molecules/Home/Preview';
 import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
-import BrightnessSliderModal from '../components/molecules/Home/BrightnessSliderModal';
 import {PREVIEW_WIDTH} from '../constants/ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,8 +32,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   const [isSwiping, setIsSwiping] = useState(false);
   const [isApplied, setIsApplied] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [isBrightnessModalVisible, setIsBrightnessModalVisible] =
-    useState(false);
   const shakeAnimation = useRef(new Animated.Value(0)).current;
 
   const {OverlayModule} = NativeModules;
@@ -76,10 +73,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
 
   const handleLockPress = () => {
     OverlayModule.lockScreen();
-  };
-
-  const handleBrightnessPress = () => {
-    setIsBrightnessModalVisible(true);
   };
 
   const handleScrollBeginDrag = () => {
@@ -178,12 +171,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
           />
           <FabButton
             isDisabled={isLoading}
-            icon="sunny"
-            isPrimary={false}
-            onPress={handleBrightnessPress}
-          />
-          <FabButton
-            isDisabled={isLoading}
             icon="ellipsis-horizontal"
             isPrimary={false}
             onPress={() => {
@@ -205,10 +192,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
       <PageIndicator
         selectedIndex={selectedIndex}
         dataLength={screens.screens.length}
-      />
-      <BrightnessSliderModal
-        isVisible={isBrightnessModalVisible}
-        setIsVisible={setIsBrightnessModalVisible}
       />
     </View>
   );

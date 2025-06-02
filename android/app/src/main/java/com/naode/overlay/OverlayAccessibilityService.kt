@@ -74,12 +74,12 @@ class OverlayAccessibilityService : AccessibilityService() {
                 Intent.ACTION_SCREEN_OFF -> {
                     Log.d(TAG, "Screen turned off")
                     stateManager.setScreenOff(true)
-                    mainHandler.post { showOverlays() }
+                    mainHandler.postAtFrontOfQueue { showOverlays() }
                 }
                 Intent.ACTION_SCREEN_ON -> {
                     Log.d(TAG, "Screen turned on")
                     stateManager.setScreenOff(false)
-                    mainHandler.post { removeOverlays() }
+                    mainHandler.postAtFrontOfQueue { removeOverlays() }
                 }
             }
         }
@@ -139,7 +139,7 @@ class OverlayAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun loadBitmap(path: String, brightness: Double): Bitmap? {
+    private fun loadBitmap(path: String): Bitmap? {
         if (!validateImagePath(path)) {
             Log.e(TAG, "Invalid image path: $path")
             return null
@@ -158,21 +158,9 @@ class OverlayAccessibilityService : AccessibilityService() {
                 // Create a new bitmap with the same dimensions
                 val adjustedBitmap = createBitmap(originalBitmap.width, originalBitmap.height)
                 
-                // Apply brightness adjustment while preserving transparency
+                // Draw the original bitmap
                 val canvas = Canvas(adjustedBitmap)
-                val paint = Paint().apply {
-                    colorFilter = ColorMatrixColorFilter(ColorMatrix().apply {
-                        val b = brightness.toFloat()
-                        val array = FloatArray(20) { 0f }
-                        array[0] = b  // Red
-                        array[6] = b  // Green
-                        array[12] = b // Blue
-                        array[18] = 1f
-                        set(array)
-                    })
-                }
-                
-                canvas.drawBitmap(originalBitmap, 0f, 0f, paint)
+                canvas.drawBitmap(originalBitmap, 0f, 0f, null)
                 originalBitmap.recycle() // Free up memory
                 
                 adjustedBitmap.also { bitmap ->
@@ -214,12 +202,11 @@ class OverlayAccessibilityService : AccessibilityService() {
 
         serviceScope.launch {
             try {
-                val isEnabled = withContext(Dispatchers.IO) {
-                    dataStore.isOverlayEnabled()
-                }
-
-                val brightness = withContext(Dispatchers.IO) {
-                    dataStore.getOverlayBrightness()
+                val (isEnabled, bitmap) = withContext(Dispatchers.IO) {
+                    Pair(
+                        dataStore.isOverlayEnabled(),
+                        loadBitmap(getSecureFilePath(dataStore.getScreensStore().optInt("selectedIndex", 0)))
+                    )
                 }
                 
                 if (!isEnabled) {
@@ -227,16 +214,17 @@ class OverlayAccessibilityService : AccessibilityService() {
                     return@launch
                 }
 
+                if (bitmap == null) {
+                    Log.e(TAG, "Failed to load bitmap")
+                    return@launch
+                }
+
                 withContext(Dispatchers.Main) {
                     removeOverlays()
                     try {
+                        val currTime = System.currentTimeMillis()
+                        val xOffset = if ((currTime % 2).toInt() == 0) 0 else 1
                         val time = measureTimeMillis {
-                            val screensStore = dataStore.getScreensStore()
-                            val selectedIndex = screensStore.optInt("selectedIndex", 0)
-                            val imagePath = getSecureFilePath(selectedIndex)
-
-                            val bitmap = loadBitmap(imagePath, brightness) ?: return@withContext
-                            
                             val imageView = ImageView(this@OverlayAccessibilityService).apply {
                                 setImageBitmap(bitmap)
                                 scaleType = ImageView.ScaleType.FIT_XY
@@ -258,14 +246,14 @@ class OverlayAccessibilityService : AccessibilityService() {
                                 PixelFormat.TRANSLUCENT
                             ).apply {
                                 gravity = android.view.Gravity.TOP or android.view.Gravity.END
-                                x = 0
+                                x = xOffset
                                 y = 0
                             }
 
                             windowManager.addView(imageView, params)
                             overlayViews["fullscreen_image"] = imageView
                         }
-                        Log.d(TAG, "Overlay shown in ${time}ms")
+                        Log.d(TAG, "Overlay shown in ${time}ms with xOffset: $xOffset")
                     } catch (e: Exception) {
                         Log.e(TAG, "Error showing full screen image", e)
                         removeOverlays()

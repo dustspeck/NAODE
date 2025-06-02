@@ -1,7 +1,6 @@
 import RNFS from 'react-native-fs';
 import {AOD_IMAGE_PATH} from '../constants/paths';
 import {handleError, createError} from './errorHandling';
-import {getStickerURI} from './common';
 
 export const ensureDirectoryExists = async (path: string): Promise<void> => {
   try {
@@ -22,7 +21,6 @@ export const ensureDirectoryExists = async (path: string): Promise<void> => {
 export const saveImage = async (
   uri: string,
   targetPath: string,
-  quality: number = 1,
 ): Promise<string> => {
   try {
     await ensureDirectoryExists(AOD_IMAGE_PATH);
@@ -35,7 +33,6 @@ export const saveImage = async (
       createError('Failed to save image', 'IMAGE_SAVE_ERROR', {
         uri,
         targetPath,
-        quality,
       }),
     );
     throw error;

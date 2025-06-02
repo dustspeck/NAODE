@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {View, StatusBar, Animated, Dimensions, PixelRatio} from 'react-native';
+import {View, StatusBar, Animated, Dimensions, PixelRatio, NativeModules} from 'react-native';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
 import EditorHeader from '../components/molecules/Editor/Header';
 import {
@@ -18,6 +18,9 @@ import {handleError, createError} from '../utils/errorHandling';
 import {measureAsync} from '../utils/performance';
 import {saveImage, ensureDirectoryExists} from '../utils/storage';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import RNFS from 'react-native-fs';
+
+const {OverlayModule} = NativeModules;
 
 interface IEditorScreenProps {
   route: {
@@ -26,6 +29,48 @@ interface IEditorScreenProps {
     };
   };
 }
+
+const createCheckerboardPattern = async (uri: string, cellSize: number = 1): Promise<string> => {
+  try {
+    // Create a temporary file for the processed image
+    const tempPath = `${RNFS.CachesDirectoryPath}/temp_${Date.now()}.png`;
+    
+    // Use the native module to create the checkerboard pattern
+    const processedPath = await OverlayModule.createCheckerboardPattern(uri, cellSize);
+    
+    // Wait a bit to ensure the file is written
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Check if the processed file exists
+    const exists = await RNFS.exists(processedPath);
+    if (!exists) {
+      throw new Error(`Processed file not found at ${processedPath}`);
+    }
+    
+    // Copy the processed image to our temporary location
+    await RNFS.copyFile(processedPath, tempPath);
+    
+    // Verify the copy was successful
+    const tempExists = await RNFS.exists(tempPath);
+    if (!tempExists) {
+      throw new Error(`Failed to copy file to ${tempPath}`);
+    }
+    
+    // Clean up the original processed file
+    if (await RNFS.exists(processedPath)) {
+      await RNFS.unlink(processedPath);
+    }
+    
+    return `file://${tempPath}`;
+  } catch (error) {
+    handleError(
+      error,
+      'EditorScreen:createCheckerboardPattern',
+      createError('Failed to create checkerboard pattern', 'IMAGE_PROCESSING_ERROR', {uri}),
+    );
+    throw error;
+  }
+};
 
 const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
   const [isZoomed, setIsZoomed] = React.useState(false);
@@ -80,7 +125,9 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
         const highQualityPath = getRenderedImagePath(id, 'aod');
         const previewPath = getRenderedImagePath(id, 'aodpreview');
 
-        await saveImage(highQualityUri, highQualityPath);
+        // optimize images for aod
+        const optimizedHighQualityUri = await createCheckerboardPattern(highQualityUri);
+        await saveImage(optimizedHighQualityUri, highQualityPath);
         await saveImage(previewUri, previewPath);
 
         console.log(

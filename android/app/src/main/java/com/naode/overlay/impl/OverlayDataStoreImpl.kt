@@ -72,15 +72,4 @@ class OverlayDataStoreImpl(context: Context) : OverlayDataStore {
             true // Default to true if there's an error
         }
     }
-
-    fun getOverlayBrightness(): Double {
-        return try {
-            val storeJson = mmkv.getString(editorStoreKey, defaultStoreJSONString)
-            val store = JSONObject(storeJson)
-            store.optDouble("brightness", 1.0)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting overlay brightness", e)
-            1.0
-        }
-    }
 } 

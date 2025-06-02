@@ -17,6 +17,11 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import androidx.core.graphics.createBitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 
 class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     private val context: ReactApplicationContext = reactContext
@@ -213,5 +218,85 @@ class OverlayModule(reactContext: ReactApplicationContext) : ReactContextBaseJav
                     promise.reject("PROCESSING_FAILED", e)
                 }
             }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    @ReactMethod
+    fun createCheckerboardPattern(imagePath: String, cellSize: Int, promise: Promise) {
+        Log.d("ImageProcessor", "createCheckerboardPattern called with imagePath: $imagePath")
+        
+        // Remove file:/// prefix if it exists
+        val cleanPath = if (imagePath.startsWith("file:///")) {
+            imagePath.substring(7)
+        } else {
+            imagePath
+        }
+        val file = File(cleanPath)
+        if (!file.exists()) {
+            Log.e("ImageProcessor", "Image file not found at $cleanPath")
+            promise.reject("FILE_NOT_FOUND", "Image file not found at $cleanPath")
+            return
+        }
+
+        try {
+            val bitmap = BitmapFactory.decodeFile(cleanPath)
+            val width = bitmap.width
+            val height = bitmap.height
+            
+            // Create a new bitmap with the same dimensions
+            val resultBitmap = createBitmap(width, height)
+            val canvas = Canvas(resultBitmap)
+            
+            // Draw the original image
+            canvas.drawBitmap(bitmap, 0f, 0f, null)
+            
+            // Create checkerboard pattern
+            val paint = Paint().apply {
+                color = Color.TRANSPARENT
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+            }
+            
+            for (y in 0 until height step cellSize) {
+                for (x in 0 until width step cellSize) {
+                    if ((x / cellSize + y / cellSize) % 2 == 0) {
+                        canvas.drawRect(
+                            x.toFloat(),
+                            y.toFloat(),
+                            (x + cellSize).toFloat(),
+                            (y + cellSize).toFloat(),
+                            paint
+                        )
+                    }
+                }
+            }
+            
+            // Create output directory if it doesn't exist
+            val outputDir = File(context.filesDir, "checkerboard")
+            if (!outputDir.exists()) {
+                outputDir.mkdirs()
+            }
+            
+            // Save the result
+            val outputFile = File(outputDir, "checkerboard_${System.currentTimeMillis()}.png")
+            val outputStream = FileOutputStream(outputFile)
+            resultBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+            outputStream.flush()
+            outputStream.close()
+            
+            // Clean up
+            bitmap.recycle()
+            resultBitmap.recycle()
+            
+            // Verify the file was written
+            if (!outputFile.exists()) {
+                throw Exception("Failed to write output file")
+            }
+            
+            Log.d("ImageProcessor", "Checkerboard pattern saved to ${outputFile.absolutePath}")
+            promise.resolve(outputFile.absolutePath)
+        } catch (e: Exception) {
+            Log.e("ImageProcessor", "Error creating checkerboard pattern", e)
+            promise.reject("PROCESSING_FAILED", e)
+        }
     }
 } 

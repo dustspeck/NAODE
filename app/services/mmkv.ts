@@ -11,7 +11,6 @@ const MMKV = new MMKVLoader()
 const defaultEditorStore: IEditorStore = {
   elements: [],
   isEnabled: true,
-  brightness: 0.7,
 };
 
 export const useEditorStore = () => {
