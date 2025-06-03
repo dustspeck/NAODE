@@ -32,34 +32,19 @@ interface IEditorScreenProps {
 
 const createCheckerboardPattern = async (uri: string, cellSize: number = 1): Promise<string> => {
   try {
-    // Create a temporary file for the processed image
     const tempPath = `${RNFS.CachesDirectoryPath}/temp_${Date.now()}.png`;
-    
-    // Use the native module to create the checkerboard pattern
     const processedPath = await OverlayModule.createCheckerboardPattern(uri, cellSize);
-    
-    // Wait a bit to ensure the file is written
+
     await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Check if the processed file exists
+
     const exists = await RNFS.exists(processedPath);
-    if (!exists) {
-      throw new Error(`Processed file not found at ${processedPath}`);
-    }
-    
-    // Copy the processed image to our temporary location
+    if (!exists) throw new Error(`Processed file not found at ${processedPath}`);
+
     await RNFS.copyFile(processedPath, tempPath);
-    
-    // Verify the copy was successful
     const tempExists = await RNFS.exists(tempPath);
-    if (!tempExists) {
-      throw new Error(`Failed to copy file to ${tempPath}`);
-    }
-    
-    // Clean up the original processed file
-    if (await RNFS.exists(processedPath)) {
-      await RNFS.unlink(processedPath);
-    }
+    if (!tempExists) throw new Error(`Failed to copy file to ${tempPath}`);
+
+    if (await RNFS.exists(processedPath)) await RNFS.unlink(processedPath);
     
     return `file://${tempPath}`;
   } catch (error) {
@@ -125,7 +110,6 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
         const highQualityPath = getRenderedImagePath(id, 'aod');
         const previewPath = getRenderedImagePath(id, 'aodpreview');
 
-        // optimize images for aod
         const optimizedHighQualityUri = await createCheckerboardPattern(highQualityUri);
         await saveImage(optimizedHighQualityUri, highQualityPath);
         await saveImage(previewUri, previewPath);

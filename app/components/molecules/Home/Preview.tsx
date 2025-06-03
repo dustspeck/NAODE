@@ -4,15 +4,15 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  ViewStyle,
 } from 'react-native';
 import Label from '../../atoms/Label';
 import {PREVIEW_IMAGE_RATIO} from '../../../constants/ui';
 import {scale} from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useEffect, useRef, useState} from 'react';
-import {useCallback} from 'react';
+import {useEffect, useRef, useState, useMemo, useCallback} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
-import {useEditorStore} from '../../../services/mmkv';
+import {useScreensStore} from '../../../services/mmkv';
 import RNFS from 'react-native-fs';
 import {IScreen} from '../../../models/OverlayModel';
 import {getRenderedImagePath} from '../../../constants/paths';
@@ -37,56 +37,163 @@ const Preview = ({
   onPress,
 }: IPreview) => {
   const {height, width} = Dimensions.get('screen');
-  const [store] = useEditorStore();
-
-  const [previewExists, setPreviewExists] = useState(false);
+  const {screens} = useScreensStore();
   const [imageKey, setImageKey] = useState(Date.now());
   const decorationTimer = useRef<NodeJS.Timeout | null>(null);
   const [decorationVisible, setDecorationVisible] = useState(true);
+  const checkPreviewTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const previewPath = getRenderedImagePath(item.id, 'aodpreview');
+  enum PreviewState {
+    LOADING,
+    PREVIEW_EXISTS,
+    NO_PREVIEW,
+  }
+  const [previewState, setPreviewState] = useState(PreviewState.LOADING);
 
-  const checkPreviewExists = async () => {
+  const previewPath = useMemo(
+    () => getRenderedImagePath(item.id, 'aodpreview'),
+    [item.id],
+  );
+
+  const handleImageError = useCallback(() => {
+    setPreviewState(PreviewState.NO_PREVIEW);
+  }, []);
+
+  const checkPreviewExists = useCallback(async () => {
     try {
-      const elementsLength = store.elements.length;
+      const elementsLength =
+        screens.screens[index].elements.length;
       const exists = await RNFS.exists(previewPath);
-      setPreviewExists(exists && elementsLength > 0);
-      if (exists) setImageKey(Date.now());
+
+      const newState =
+        exists && elementsLength > 0
+          ? PreviewState.PREVIEW_EXISTS
+          : PreviewState.NO_PREVIEW;
+
+      setPreviewState(newState);
+      if (exists) {
+        setImageKey(Date.now());
+      }
     } catch (error) {
       console.error('Error checking preview:', error);
-      setPreviewExists(false);
+      setPreviewState(PreviewState.NO_PREVIEW);
     }
-  };
+  }, [previewPath, index, screens.screens]);
 
-  useEffect(() => {
-    checkPreviewExists();
+  // Cleanup function for timers
+  const cleanupTimers = useCallback(() => {
+    if (checkPreviewTimer.current) {
+      clearTimeout(checkPreviewTimer.current);
+      checkPreviewTimer.current = null;
+    }
+    if (decorationTimer.current) {
+      clearTimeout(decorationTimer.current);
+      decorationTimer.current = null;
+    }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      const timer = setTimeout(() => {
-        checkPreviewExists();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }, [store.elements]),
+      setPreviewState(PreviewState.LOADING);
+      // Clear any existing timer before setting a new one
+      if (checkPreviewTimer.current) {
+        clearTimeout(checkPreviewTimer.current);
+      }
+      checkPreviewTimer.current = setTimeout(checkPreviewExists, 1000);
+
+      return () => {
+        cleanupTimers();
+      };
+    }, [checkPreviewExists, cleanupTimers]),
   );
 
   useEffect(() => {
     if (isScrolling) {
       setDecorationVisible(true);
     }
+
     if (decorationTimer.current) {
       clearTimeout(decorationTimer.current);
     }
+
     decorationTimer.current = setTimeout(() => {
       setDecorationVisible(false);
     }, 800);
+
     return () => {
       if (decorationTimer.current) {
         clearTimeout(decorationTimer.current);
       }
     };
   }, [isScrolling]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupTimers();
+    };
+  }, [cleanupTimers]);
+
+  const handlePress = useCallback(() => {
+    onPress();
+  }, [onPress]);
+
+  const previewContainerStyle = useMemo(
+    () => [
+      styles.previewContainer,
+      {
+        height: height * PREVIEW_IMAGE_RATIO,
+        width: width * PREVIEW_IMAGE_RATIO,
+      },
+    ],
+    [height, width],
+  );
+
+  const headerContainerStyle = useMemo(
+    () => [styles.headerContainer, {width: width * PREVIEW_IMAGE_RATIO}],
+    [width],
+  );
+
+  const statusContainerStyle = useMemo<ViewStyle>(
+    () => ({
+      flexDirection: 'row',
+      alignItems: 'center' as const,
+      gap: scale(2),
+      backgroundColor: !isApplied || isScrolling ? '#333' : '#14452f',
+      paddingHorizontal: scale(5),
+      paddingRight: !isApplied || isScrolling ? scale(10) : scale(7),
+      paddingLeft: !isApplied || isScrolling ? scale(10) : scale(5),
+      paddingVertical: scale(1),
+      borderRadius: scale(10),
+    }),
+    [isApplied, isScrolling],
+  );
+
+  const renderPreviewContent = useCallback(() => {
+    if (previewState === PreviewState.NO_PREVIEW) {
+      return (
+        <View style={styles.noPreviewContainer}>
+          <Icon name="brush" size={scale(20)} color="#eee5" />
+          <Label text="Customize your AOD" style={styles.noPreviewText} />
+          <Label
+            text="Tap the Edit button to get started"
+            style={styles.noPreviewSubText}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.previewImageContainer}>
+        <Image
+          source={{uri: `file://${previewPath}?t=${imageKey}`}}
+          style={styles.previewImage}
+          onError={handleImageError}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }, [previewState, previewPath, imageKey, handleImageError]);
 
   return (
     <View style={styles.bodyContainer}>
@@ -109,21 +216,9 @@ const Preview = ({
           />
         </View>
       )}
-      <View
-        style={[styles.headerContainer, {width: width * PREVIEW_IMAGE_RATIO}]}>
+      <View style={headerContainerStyle}>
         <Label text={item.name} style={styles.headerText} />
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: scale(2),
-            backgroundColor: !isApplied || isScrolling ? '#333' : '#14452f',
-            paddingHorizontal: scale(5),
-            paddingRight: !isApplied || isScrolling ? scale(10) : scale(7),
-            paddingLeft: !isApplied || isScrolling ? scale(10) : scale(5),
-            paddingVertical: scale(1),
-            borderRadius: scale(10),
-          }}>
+        <View style={statusContainerStyle}>
           {isApplied && !isScrolling && (
             <Icon name="checkmark" size={scale(10)} color="#caffbf" />
           )}
@@ -138,33 +233,8 @@ const Preview = ({
           />
         </View>
       </View>
-      <TouchableOpacity activeOpacity={1} onPress={onPress}>
-        <View
-          style={[
-            styles.previewContainer,
-            {
-              height: height * PREVIEW_IMAGE_RATIO,
-              width: width * PREVIEW_IMAGE_RATIO,
-            },
-          ]}>
-          {previewExists ? (
-            <Image
-              key={imageKey}
-              source={{uri: `file://${previewPath}?t=${imageKey}`}}
-              style={styles.previewImage}
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={styles.noPreviewContainer}>
-              <Icon name="brush" size={scale(20)} color="#eee5" />
-              <Label text="Customize your AOD" style={styles.noPreviewText} />
-              <Label
-                text="Tap the Edit button to get started"
-                style={styles.noPreviewSubText}
-              />
-            </View>
-          )}
-        </View>
+      <TouchableOpacity activeOpacity={1} onPress={handlePress}>
+        <View style={previewContainerStyle}>{renderPreviewContent()}</View>
       </TouchableOpacity>
     </View>
   );
@@ -200,10 +270,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   previewImage: {
+    position: 'absolute',
     width: '100%',
     height: '100%',
   },
+  previewImageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   noPreviewContainer: {
+    position: 'absolute',
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',

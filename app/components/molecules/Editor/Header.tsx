@@ -186,7 +186,7 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
         <IconPill
           onPress={handleSaveModal}
           hasWarning={hasUnsavedChanges}
-          disabled={isSavingState}
+          disabled={isSavingState || !hasUnsavedChanges}
           icon={isSavingState ? 'hourglass-outline' : 'checkmark'}
         />
       </View>

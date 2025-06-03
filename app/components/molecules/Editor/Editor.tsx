@@ -240,44 +240,48 @@ const Editor: React.FC<EditorProps> = React.memo(
     );
 
     return (
-      <TouchableWithoutFeedback onPress={handlePress}>
-        <Animated.View style={containerStyle}>
-          {elements.length === 0 && (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 10,
-              }}>
-              <Label
-                text="No items added"
-                style={{fontWeight: '900', fontSize: 15, color: '#888'}}
+        // {/* {elements.length === 0 && (
+        //   <View
+        //     style={{
+        //       flex: 1,
+        //       justifyContent: 'center',
+        //       alignItems: 'center',
+        //       gap: 10,
+        //       position: 'absolute',
+        //       top: 0,
+        //       left: 0,
+        //       right: 0,
+        //       bottom: 0,
+        //     }}>
+        //     <Label
+        //       text="No items added"
+        //       style={{fontWeight: '900', fontSize: 15, color: '#888'}}
+        //     />
+        //     <View style={{flexDirection: 'row', gap: 5, alignItems: 'center'}}>
+        //       <Label text="Tap the" style={{color: '#888'}} />
+        //       <ControlIcon name="add" onPress={() => {}} />
+        //       <Label text="icon to add an element" style={{color: '#888'}} />
+        //     </View>
+        //   </View>
+        // )} */}
+        <TouchableWithoutFeedback onPress={handlePress}>
+          <Animated.View style={containerStyle}>
+            {sortedElements.map(element => (
+              <ElementRenderer
+                key={element.id}
+                element={element}
+                isSelected={selectedElementId === element.id}
+                isZoomed={isZoomed}
+                animatedSize={animatedSize}
+                panValues={panValues}
+                onSelect={elementHandlers.onSelect}
+                onUpdate={elementHandlers.onUpdate}
+                onDelete={elementHandlers.onDelete}
               />
-              <View
-                style={{flexDirection: 'row', gap: 5, alignItems: 'center'}}>
-                <Label text="Tap the" style={{color: '#888'}} />
-                <ControlIcon name="add" onPress={() => {}} />
-                <Label text="icon to add an element" style={{color: '#888'}} />
-              </View>
-            </View>
-          )}
-          {sortedElements.map(element => (
-            <ElementRenderer
-              key={element.id}
-              element={element}
-              isSelected={selectedElementId === element.id}
-              isZoomed={isZoomed}
-              animatedSize={animatedSize}
-              panValues={panValues}
-              onSelect={elementHandlers.onSelect}
-              onUpdate={elementHandlers.onUpdate}
-              onDelete={elementHandlers.onDelete}
-            />
-          ))}
-          <FullScreenControls isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
-        </Animated.View>
-      </TouchableWithoutFeedback>
+            ))}
+            <FullScreenControls isZoomed={isZoomed} setIsZoomed={setIsZoomed} />
+          </Animated.View>
+        </TouchableWithoutFeedback>
     );
   },
   (prevProps, nextProps) => {

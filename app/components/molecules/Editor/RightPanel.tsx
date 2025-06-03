@@ -194,6 +194,11 @@ const RightPanel: React.FC<RightPanelProps> = ({
             )}
           </RightPanelOverhead>
         )}
+        {elements.length === 0 && !isAddSelected && !isSaveSelected && (
+          <RightPanelOverhead>
+            <Label text="Start by adding an element" style={{color: '#eee', fontSize: scale(7)}} />
+          </RightPanelOverhead>
+        )}
         <ControlIcon
           name="add-circle"
           onPress={handleAddPress}
