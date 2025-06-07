@@ -35,8 +35,10 @@ function App(): React.JSX.Element {
               initialRouteName="Home"
               screenOptions={{
                 headerShown: false,
-                contentStyle: {backgroundColor: 'black'},
                 animation: 'simple_push',
+                contentStyle: {
+                  backgroundColor: '#0c0c0c',
+                },
               }}>
               <Stack.Screen name="Home" component={HomeScreen} />
               <Stack.Screen name="Editor" component={EditorScreen} />

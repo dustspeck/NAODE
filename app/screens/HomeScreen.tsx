@@ -165,13 +165,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
         <View style={styles.fabSecondaryContainer}>
           <FabButton
             isDisabled={isLoading}
-            icon="lock-closed"
+            icon="lock-closed-outline"
             isPrimary={false}
             onPress={handleLockPress}
           />
           <FabButton
             isDisabled={isLoading}
-            icon="ellipsis-horizontal"
+            icon="settings-outline"
             isPrimary={false}
             onPress={() => {
               navigation.navigate('Shop');
@@ -184,7 +184,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
           }}>
           <FabButton
             isDisabled={isLoading}
-            icon="brush"
+            icon="pencil"
+            text="Edit"
             onPress={handleEditPress}
           />
         </Animated.View>
@@ -199,16 +200,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
 
 const styles = StyleSheet.create({
   mainContainer: {
-    margin: scale(15),
-    marginHorizontal: scale(5),
-    minHeight: '100%',
-    backgroundColor: '#000',
+    flex: 1,
+    backgroundColor: '#0c0c0c',
     paddingHorizontal: scale(16),
   },
   fabContainer: {
     position: 'absolute',
     flexDirection: 'row',
-    bottom: scale(40),
+    bottom: scale(0),
+    marginBottom: scale(25),
     alignItems: 'center',
     alignSelf: 'center',
     width: '100%',

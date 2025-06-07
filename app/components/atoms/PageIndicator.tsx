@@ -12,8 +12,8 @@ const getPageIndicatorColor = (
   dataLength: number,
 ) => {
   const isSelected = (i: number) => i === selectedIndex;
-  const activeColor = '#aaa';
-  const inactiveColor = '#555';
+  const activeColor = '#eee8';
+  const inactiveColor = '#eee4';
   if (dataLength === 1) return activeColor;
   if (dataLength === 2) {
     return isSelected(index) ? activeColor : inactiveColor;
@@ -67,7 +67,7 @@ const PageIndicator: React.FC<IPageIndicatorProps> = ({
 const styles = StyleSheet.create({
   pageIndicator: {
     position: 'absolute',
-    bottom: scale(120),
+    bottom: scale(85),
     left: scale(10),
     right: scale(10),
     alignItems: 'center',

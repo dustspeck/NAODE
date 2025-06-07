@@ -10,7 +10,7 @@ export const MIN_IMAGE_SIZE = 50;
 export const MAX_FONT_SIZE = 300;
 export const MIN_FONT_SIZE = 10;
 export const DEFAULT_FONT_SIZE = 30;
-export const PREVIEW_IMAGE_RATIO = 0.6;
+export const PREVIEW_IMAGE_RATIO = 0.68;
 export const PREVIEW_WIDTH = scale(320);
 
 export const FONTS = [

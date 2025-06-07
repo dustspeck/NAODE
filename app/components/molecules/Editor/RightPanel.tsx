@@ -135,7 +135,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
   };
 
   return (
-    <View>
+    <View style={{backgroundColor: '#0c0c0c'}}>
       <Animated.View
         style={{
           width: width * EDIT_CONTROLS_RATIO,

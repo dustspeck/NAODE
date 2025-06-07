@@ -32,7 +32,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({navigation}) => {
         />
       </View>
       <Label
-        text={'Collections'}
+        text="Settings"
         style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}
       />
       <View style={{width: scale(50)}}>

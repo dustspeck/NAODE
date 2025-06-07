@@ -29,22 +29,32 @@ const Toggle: React.FC<IToggleProps> = props => {
       activeOpacity={0.8}
       style={{flex: 1}}>
       <View style={{opacity: isLoading ? 0.5 : 1}}>
-        <View style={{flexDirection: 'row'}}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
           {isImportant && !isEnabled && <WarningIcon size={scale(10)} />}
           {isEnabled ? (
             <Icon
               name="toggle"
               size={scale(30)}
-              style={{color: '#e1e1e1', textAlign: 'center'}}
+              style={{
+                color: '#eeea',
+                textAlign: 'center',
+                lineHeight: scale(20),
+              }}
             />
           ) : (
             <Icon
               name="toggle-outline"
               size={scale(30)}
               style={{
-                color: '#e1e1e1',
+                color: '#eeea',
                 textAlign: 'center',
                 transform: [{rotate: '180deg'}],
+                lineHeight: scale(30),
               }}
             />
           )}

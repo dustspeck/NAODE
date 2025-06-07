@@ -107,7 +107,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
   );
 
   return (
-    <View>
+    <View style={{backgroundColor: '#0c0c0c'}}>
       {isLayersSelected && (
         <LeftPanelOverhead>
           <View style={{alignItems: 'center', gap: scale(8)}}>

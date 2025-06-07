@@ -23,7 +23,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import {NativeModules} from 'react-native';
 import TextBox from '../../atoms/TextBox';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const {OverlayModule} = NativeModules;
 
@@ -153,13 +153,15 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
   return (
     <View
       style={{
-        height: height * EDIT_CONTROLS_RATIO,
+        height: height * EDIT_CONTROLS_RATIO + scale(20),
         width: width,
         alignItems: 'center',
         justifyContent: 'space-between',
         flexDirection: 'row',
         paddingHorizontal: scale(10),
-        marginTop: insets.top,
+        paddingBottom: scale(10),
+        paddingTop: insets.top + scale(10),
+        backgroundColor: '#0c0c0c',
       }}>
       <View style={{width: scale(50)}}>
         <IconPill icon="chevron-back" onPress={handleBack} />
@@ -172,7 +174,7 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
           marginLeft: scale(20),
         }}>
         <Label
-          text={headingText}
+          text={`${headingText}${hasUnsavedChanges ? '*' : ''}`}
           style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}
         />
         <TouchableOpacity

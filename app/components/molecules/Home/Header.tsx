@@ -1,68 +1,18 @@
-import {NativeModules, StyleSheet, View, Animated} from 'react-native';
+import {NativeModules, StyleSheet, View} from 'react-native';
 import Toggle from '../../atoms/Toggle';
 import {scale} from 'react-native-size-matters';
 import Label from '../../atoms/Label';
 import {useEditorStore} from '../../../services/mmkv';
-import {useState, useEffect, useRef} from 'react';
+import {useState} from 'react';
 
 const Header = () => {
   const [store, setStore] = useEditorStore();
   const [isLoading, setIsLoading] = useState(false);
   const {OverlayModule} = NativeModules;
-  
-  // Multiple animation values for different effects
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-  const justEnabled = useRef(false);
-
-  useEffect(() => {
-    if (store.isEnabled && justEnabled.current) {
-      // Reset animations
-      scaleAnim.setValue(1);
-      opacityAnim.setValue(1);
-
-      // Complex animation sequence
-      Animated.parallel([
-        // Scale up with spring effect
-        Animated.sequence([
-          Animated.spring(scaleAnim, {
-            toValue: 1.3,
-            friction: 3,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            friction: 5,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-        ]),
-
-        // Subtle opacity pulse
-        Animated.sequence([
-          Animated.timing(opacityAnim, {
-            toValue: 0.8,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
-
-      // Reset the flag after animation
-      justEnabled.current = false;
-    }
-  }, [store.isEnabled]);
 
   const handleTogglePressed = () => {
     if (!store.isEnabled) {
       setIsLoading(true);
-      justEnabled.current = true; // Set flag when user enables
       setTimeout(() => {
         setIsLoading(false);
         setStore({isEnabled: true});
@@ -77,28 +27,24 @@ const Header = () => {
     <View style={styles.headerContainer}>
       <View style={{flex: 1}}>
         <View style={{flexDirection: 'row'}}>
-          <Label text="Aodes" style={{fontSize: 24, fontWeight: 'bold'}} />
-          <Label text="ign." style={{fontSize: 24, fontWeight: '200'}} />
+          <Label
+            text="Aodes"
+            style={{fontSize: 18, fontWeight: 'bold', color: '#eeea'}}
+          />
+          <Label
+            text="ign."
+            style={{fontSize: 18, fontWeight: '200', color: '#eeea'}}
+          />
         </View>
       </View>
-      <Animated.View style={[
-        styles.toggleContainer,
-        {
-          transform: [
-            { scale: scaleAnim }
-          ],
-          opacity: opacityAnim,
-          shadowColor: '#00ff00',
-          shadowOffset: { width: 0, height: 0 },
-        }
-      ]}>
+      <View style={styles.toggleContainer}>
         <Toggle
           isImportant
           isEnabled={store.isEnabled}
           isLoading={isLoading}
           onTogglePressed={handleTogglePressed}
         />
-      </Animated.View>
+      </View>
     </View>
   );
 };
@@ -110,6 +56,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignContent: 'center',
     alignSelf: 'center',
+    padding: scale(10),
+    paddingHorizontal: scale(20),
+    paddingRight: scale(15),
+    marginHorizontal: -scale(5),
+    backgroundColor: '#eee1',
+    borderRadius: scale(15),
   },
   heading: {
     fontSize: 24,

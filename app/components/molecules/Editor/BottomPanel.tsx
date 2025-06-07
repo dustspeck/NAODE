@@ -407,7 +407,8 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     <View
       style={{
         height: height * EDIT_CONTROLS_RATIO,
-        width: width,
+        width,
+        backgroundColor: '#0c0c0c',
       }}>
       {selectedElementId && selectedElement && (
         <>

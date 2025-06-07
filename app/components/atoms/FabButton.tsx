@@ -1,16 +1,19 @@
 import {StyleSheet, TouchableOpacity, NativeModules} from 'react-native';
 import {scale} from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Label from './Label';
 
 interface IFabButtonProps {
   icon: string;
   isPrimary?: boolean;
+  text?: string;
   onPress: () => void;
   isDisabled?: boolean;
 }
 
 const FabButton: React.FC<IFabButtonProps> = ({
   icon,
+  text,
   isPrimary = true,
   onPress,
   isDisabled = false,
@@ -28,28 +31,33 @@ const FabButton: React.FC<IFabButtonProps> = ({
         onPress();
       }}
       activeOpacity={0.8}>
-      <Icon
-        name={icon}
-        size={scale(isPrimary ? 20 : 16)}
-        color={isPrimary ? '#222' : '#aaa'}
-      />
+      <Icon name={icon} size={scale(isPrimary ? 14 : 16)} color="#a2a2a2" />
+      {text && (
+        <Label
+          text={text}
+          style={{color: '#a2a2a2', fontSize: scale(8), fontWeight: 500}}
+        />
+      )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   fabButtonPrimary: {
-    height: scale(50),
-    width: scale(50),
-    backgroundColor: '#bbb',
-    borderRadius: scale(18),
+    paddingVertical: scale(10),
+    paddingLeft: scale(14),
+    paddingRight: scale(16),
+    backgroundColor: '#eee1',
+    borderRadius: scale(12),
     justifyContent: 'center',
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: scale(10),
   },
   fabButtonSecondary: {
     height: scale(40),
     width: scale(40),
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#eee1',
     borderRadius: scale(12),
     justifyContent: 'center',
     alignItems: 'center',

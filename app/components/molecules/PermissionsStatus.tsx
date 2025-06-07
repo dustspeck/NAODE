@@ -17,7 +17,10 @@ function PermissionStatus(): React.JSX.Element | null {
   const [statusMessage, setStatusMessage] = useState('');
 
   const updateStatusMessage = () => {
-    const message = MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
+    const message =
+      MOTIVATIONAL_MESSAGES[
+        Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)
+      ];
     setStatusMessage(message);
   };
 
@@ -90,7 +93,12 @@ function PermissionStatus(): React.JSX.Element | null {
     isEnabled: boolean | undefined;
   }) => {
     return (
-      <View style={{flexDirection: 'row', alignContent: 'center'}}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignContent: 'center',
+          marginHorizontal: scale(10),
+        }}>
         <Icon
           name={
             isLoading ? 'time-outline' : isEnabled ? 'checkmark-done' : 'alert'
@@ -128,21 +136,31 @@ function PermissionStatus(): React.JSX.Element | null {
   };
 
   return (
+    // <>
+    //   {permissionsUpdated && accessibilityPermission ? (
+    //     <AllPermissionsStatus />
+    //   ) : (
+    //     <>
+    //       <AllPermissionsStatus isLoading />
+    //       <ModalWindow
+    //         onBackPressed={() => {}}
+    //         isVisible={!accessibilityPermission}
+    //         heading="Accessibility Permission"
+    //         subHeading="Enable AccessibilityService API"
+    //         content={AccessibilityPermissionDashboard}
+    //       />
+    //     </>
+    //   )}
+    // </>
     <>
-      {permissionsUpdated && accessibilityPermission ? (
-        <AllPermissionsStatus />
-      ) : (
-        <>
-          <AllPermissionsStatus isLoading />
-          <ModalWindow
-            onBackPressed={() => {}}
-            isVisible={!accessibilityPermission}
-            heading="Accessibility Permission"
-            subHeading="Enable AccessibilityService API"
-            content={AccessibilityPermissionDashboard}
-          />
-        </>
-      )}
+      <View style={{margin: scale(15)}} />
+      <ModalWindow
+        onBackPressed={() => {}}
+        isVisible={!accessibilityPermission}
+        heading="Accessibility Permission"
+        subHeading="Enable AccessibilityService API"
+        content={AccessibilityPermissionDashboard}
+      />
     </>
   );
 }

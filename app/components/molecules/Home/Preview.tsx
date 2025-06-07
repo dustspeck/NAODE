@@ -61,8 +61,7 @@ const Preview = ({
 
   const checkPreviewExists = useCallback(async () => {
     try {
-      const elementsLength =
-        screens.screens[index].elements.length;
+      const elementsLength = screens.screens[index].elements.length;
       const exists = await RNFS.exists(previewPath);
 
       const newState =
@@ -161,10 +160,9 @@ const Preview = ({
       gap: scale(2),
       backgroundColor: !isApplied || isScrolling ? '#333' : '#14452f',
       paddingHorizontal: scale(5),
-      paddingRight: !isApplied || isScrolling ? scale(10) : scale(7),
-      paddingLeft: !isApplied || isScrolling ? scale(10) : scale(5),
       paddingVertical: scale(1),
       borderRadius: scale(10),
+      marginRight: scale(8),
     }),
     [isApplied, isScrolling],
   );
@@ -197,39 +195,29 @@ const Preview = ({
 
   return (
     <View style={styles.bodyContainer}>
-      {(decorationVisible || isScrolling) && (
+      <View style={headerContainerStyle}>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+          <View style={statusContainerStyle}>
+            <Icon
+              name={
+                isApplied && !isScrolling ? 'checkmark' : 'ellipsis-horizontal'
+              }
+              size={scale(10)}
+              color={isApplied && !isScrolling ? '#caffbf' : '#eee5'}
+            />
+          </View>
+          <Label text={item.name} style={styles.headerText} />
+        </View>
         <View
           style={{
-            position: 'absolute',
-            left: scale(20),
-            top: 0,
-            height: height * PREVIEW_IMAGE_RATIO,
-            justifyContent: 'center',
+            backgroundColor: '#333',
+            paddingHorizontal: scale(5),
+            paddingVertical: scale(1),
+            borderRadius: scale(10),
           }}>
           <Label
             text={`${index + 1} of ${totalScreens}`}
-            style={{
-              transform: [{rotate: '-90deg'}],
-              color: '#eee5',
-              textAlign: 'center',
-            }}
-          />
-        </View>
-      )}
-      <View style={headerContainerStyle}>
-        <Label text={item.name} style={styles.headerText} />
-        <View style={statusContainerStyle}>
-          {isApplied && !isScrolling && (
-            <Icon name="checkmark" size={scale(10)} color="#caffbf" />
-          )}
-          <Label
-            text={
-              isScrolling ? 'Selecting' : isApplied ? 'Applied' : 'Applying'
-            }
-            style={{
-              fontSize: 8,
-              color: isApplied && !isScrolling ? '#caffbf' : '#aaa',
-            }}
+            style={{color: '#eee5', textAlign: 'center', fontSize: 8}}
           />
         </View>
       </View>
@@ -257,6 +245,7 @@ const styles = StyleSheet.create({
     borderColor: '#6665',
     borderRadius: scale(10),
     overflow: 'hidden',
+    backgroundColor: '#000',
   },
   headerContainer: {
     flexDirection: 'row',
