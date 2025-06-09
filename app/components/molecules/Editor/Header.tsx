@@ -1,10 +1,14 @@
 import {
   ActivityIndicator,
+  ToastAndroid,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
-import {EDIT_CONTROLS_RATIO} from '../../../constants/ui';
+import {
+  EDIT_CONTROLS_RATIO,
+  SAVE_SUCCESS_MESSAGES,
+} from '../../../constants/ui';
 import IconPill from '../../atoms/IconPill';
 import Label from '../../atoms/Label';
 import {scale} from 'react-native-size-matters';
@@ -24,6 +28,7 @@ import {useNavigation} from '@react-navigation/native';
 import {NativeModules} from 'react-native';
 import TextBox from '../../atoms/TextBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {SaveSuccess} from '../../atoms/animations/SaveSuccess';
 
 const {OverlayModule} = NativeModules;
 
@@ -84,15 +89,23 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
   };
 
   const saveChanges = useCallback(() => {
-    setSelectedElementId(null);
-    setIsSavingState(true);
-    setStore({elements});
-    setScreens(updateScreen(screens.screens, screenIndex, elements));
-    saveImage(screens.screens[screenIndex].id);
-    setTimeout(() => {
+    try {
+      setSelectedElementId(null);
+      setIsSavingState(true);
+      setStore({elements});
+      setScreens(updateScreen(screens.screens, screenIndex, elements));
+      saveImage(screens.screens[screenIndex].id);
+      setTimeout(() => {
+        setIsSavingState(false);
+      }, 1000);
+      setTimeout(() => {
+        setIsSaveModalVisible(false);
+      }, 3000);
+    } catch (error) {
       setIsSavingState(false);
       setIsSaveModalVisible(false);
-    }, 1000);
+      ToastAndroid.show('Something went wrong', ToastAndroid.SHORT);
+    }
   }, [elements, setStore, saveImage, screenIndex, screens.screens]);
 
   const handleRenameConfirm = () => {
@@ -193,18 +206,41 @@ const EditorHeader: React.FC<IHeaderProps> = ({saveImage, screenIndex}) => {
         />
       </View>
       <ModalWindow
-        content={() => (
-          <View
-            style={{
-              gap: scale(20),
-              paddingHorizontal: scale(10),
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}>
-            <ActivityIndicator size="large" color="#fff" />
-            <Label text="Saving changes" style={{fontSize: scale(7)}} />
-          </View>
-        )}
+        content={useCallback(() => {
+          const message = isSavingState
+            ? 'Saving changes'
+            : SAVE_SUCCESS_MESSAGES[
+                Math.floor(Math.random() * SAVE_SUCCESS_MESSAGES.length)
+              ];
+          return (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: scale(10),
+                gap: scale(10),
+              }}>
+              <View
+                style={{
+                  width: scale(50),
+                  height: scale(50),
+                  alignContent: 'center',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                {isSavingState ? (
+                  <ActivityIndicator size="large" color="white" />
+                ) : (
+                  <SaveSuccess />
+                )}
+              </View>
+              <Label
+                text={message}
+                style={{fontSize: scale(7), color: 'white'}}
+              />
+            </View>
+          );
+        }, [isSavingState])}
         heading="Please wait"
         isVisible={isSaveModalVisible}
         onBackPressed={() => {}}

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -6,7 +6,12 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import {DEFAULT_TEXT_VALUE, EDIT_CONTROLS_RATIO, getImageLibraryOptions, getUserImageURI} from '../../../constants/ui';
+import {
+  DEFAULT_TEXT_VALUE,
+  EDIT_CONTROLS_RATIO,
+  getImageLibraryOptions,
+  getUserImageURI,
+} from '../../../constants/ui';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useEditorContext} from '../../../context/EditorContext';
 import ControlIcon from '../../atoms/ControlIcon';
@@ -23,7 +28,8 @@ import {
   USER_IMAGES_PATH,
 } from '../../../constants/paths';
 import {IScreen} from '../../../models/OverlayModel';
-import { copyImage, ensureDirectoryExists } from '../../../utils/storage';
+import {copyImage, ensureDirectoryExists} from '../../../utils/storage';
+import { EditorStarterCue } from '../../atoms/animations/EditorStarterCue';
 
 interface RightPanelProps {
   animatedSize: Animated.Value;
@@ -50,6 +56,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
   const [isSaveSelected, setIsSaveSelected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedToPath, setSavedToPath] = useState<string | null>(null);
+  
 
   useEffect(() => {
     if (selectedElementId === null) {
@@ -58,26 +65,23 @@ const RightPanel: React.FC<RightPanelProps> = ({
   }, [selectedElementId]);
 
   const onAddImage = async () => {
-    launchImageLibrary(
-      getImageLibraryOptions(),
-      async response => {
-        if (response.didCancel) {
-          ToastAndroid.show('No image selected', ToastAndroid.SHORT);
-          return;
+    launchImageLibrary(getImageLibraryOptions(), async response => {
+      if (response.didCancel) {
+        ToastAndroid.show('No image selected', ToastAndroid.SHORT);
+        return;
+      }
+      if (response.assets && response.assets[0]?.uri) {
+        try {
+          await ensureDirectoryExists(USER_IMAGES_PATH);
+          const newPath = getUserImageURI(response.assets[0].uri);
+          await copyImage(response.assets[0].uri, newPath);
+          handleAddImage(newPath);
+        } catch (error) {
+          console.error('Error copying image:', error);
+          ToastAndroid.show('Error saving image', ToastAndroid.SHORT);
         }
-        if (response.assets && response.assets[0]?.uri) {
-          try {
-            await ensureDirectoryExists(USER_IMAGES_PATH);
-            const newPath = getUserImageURI(response.assets[0].uri);
-            await copyImage(response.assets[0].uri, newPath);
-            handleAddImage(newPath);
-          } catch (error) {
-            console.error('Error copying image:', error);
-            ToastAndroid.show('Error saving image', ToastAndroid.SHORT);
-          }
-        }
-      },
-    );
+      }
+    });
     setIsAddSelected(false);
   };
 
@@ -195,9 +199,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
           </RightPanelOverhead>
         )}
         {elements.length === 0 && !isAddSelected && !isSaveSelected && (
-          <RightPanelOverhead>
-            <Label text="Start by adding an element" style={{color: '#eee', fontSize: scale(7)}} />
-          </RightPanelOverhead>
+          <EditorStarterCue />
         )}
         <ControlIcon
           name="add-circle"

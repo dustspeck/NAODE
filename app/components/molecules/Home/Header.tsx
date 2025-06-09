@@ -1,26 +1,14 @@
-import {NativeModules, StyleSheet, View} from 'react-native';
-import Toggle from '../../atoms/Toggle';
+import {StyleSheet, View} from 'react-native';
 import {scale} from 'react-native-size-matters';
 import Label from '../../atoms/Label';
 import {useEditorStore} from '../../../services/mmkv';
-import {useState} from 'react';
+import { MainToggle } from '../../atoms/animations/MainToggle';
 
 const Header = () => {
   const [store, setStore] = useEditorStore();
-  const [isLoading, setIsLoading] = useState(false);
-  const {OverlayModule} = NativeModules;
 
   const handleTogglePressed = () => {
-    if (!store.isEnabled) {
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        setStore({isEnabled: true});
-      }, 500);
-    } else {
-      OverlayModule.removeAllOverlays();
-      setStore({isEnabled: false});
-    }
+    setStore({isEnabled: !store.isEnabled});
   };
 
   return (
@@ -38,10 +26,8 @@ const Header = () => {
         </View>
       </View>
       <View style={styles.toggleContainer}>
-        <Toggle
-          isImportant
+        <MainToggle
           isEnabled={store.isEnabled}
-          isLoading={isLoading}
           onTogglePressed={handleTogglePressed}
         />
       </View>

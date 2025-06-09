@@ -1,5 +1,7 @@
 const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
-const {wrapWithReanimatedMetroConfig} = require('react-native-reanimated/metro-config');
+const {
+  wrapWithReanimatedMetroConfig,
+} = require('react-native-reanimated/metro-config');
 
 /**
  * Metro configuration
@@ -7,8 +9,13 @@ const {wrapWithReanimatedMetroConfig} = require('react-native-reanimated/metro-c
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
-const config = {};
+const defaultConfig = getDefaultConfig(__dirname);
+const config = {
+  resolver: {
+    assetExts: [...defaultConfig.resolver.assetExts, 'lottie', 'json'],
+  },
+};
 
 module.exports = wrapWithReanimatedMetroConfig(
-  mergeConfig(getDefaultConfig(__dirname), config),
+  mergeConfig(defaultConfig, config),
 );

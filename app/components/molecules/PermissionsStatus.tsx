@@ -153,7 +153,7 @@ function PermissionStatus(): React.JSX.Element | null {
     //   )}
     // </>
     <>
-      <View style={{margin: scale(15)}} />
+      <View style={{margin: scale(12)}} />
       <ModalWindow
         onBackPressed={() => {}}
         isVisible={!accessibilityPermission}

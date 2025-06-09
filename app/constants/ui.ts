@@ -2,7 +2,7 @@ import {CaptureOptions} from 'react-native-view-shot';
 import {ImageLibraryOptions} from 'react-native-image-picker';
 import {getRandomString} from '../utils/common';
 import {USER_IMAGES_PATH} from './paths';
-import { scale } from 'react-native-size-matters';
+import {scale} from 'react-native-size-matters';
 
 export const EDIT_WINDOW_RATIO = 0.78;
 export const EDIT_CONTROLS_RATIO = (1 - EDIT_WINDOW_RATIO) / 2;
@@ -71,11 +71,18 @@ export const getUserImageURI = (uri: string) => {
 };
 
 export const MOTIVATIONAL_MESSAGES = [
-  "All set to create amazing designs!",
-  "Your creative journey begins now!",
-  "Ready to make magic happen!",
-  "Your creative space is ready!",
-  "Time to unleash your creativity!",
-  "All set for greatness!",
-  "Ready to make your mark!"
+  'All set to create amazing designs!',
+  'Your creative journey begins now!',
+  'Ready to make magic happen!',
+  'Your creative space is ready!',
+  'Time to unleash your creativity!',
+  'All set for greatness!',
+  'Ready to make your mark!',
+];
+
+export const SAVE_SUCCESS_MESSAGES = [
+  'Changes saved successfully!',
+  'Done. Now that\'s a vibe!',
+  'Smooth save! Keep going!',
+  'Honestly? This is slick!'
 ];

@@ -16,6 +16,7 @@ import {useScreensStore} from '../../../services/mmkv';
 import RNFS from 'react-native-fs';
 import {IScreen} from '../../../models/OverlayModel';
 import {getRenderedImagePath} from '../../../constants/paths';
+import { EmptySlate } from '../../atoms/animations/EmptySlate';
 
 interface IPreview {
   isScrolling: boolean;
@@ -171,7 +172,7 @@ const Preview = ({
     if (previewState === PreviewState.NO_PREVIEW) {
       return (
         <View style={styles.noPreviewContainer}>
-          <Icon name="brush" size={scale(20)} color="#eee5" />
+          <EmptySlate />
           <Label text="Customize your AOD" style={styles.noPreviewText} />
           <Label
             text="Tap the Edit button to get started"
@@ -210,7 +211,7 @@ const Preview = ({
         </View>
         <View
           style={{
-            backgroundColor: '#333',
+            backgroundColor: '#eee1',
             paddingHorizontal: scale(5),
             paddingVertical: scale(1),
             borderRadius: scale(10),
