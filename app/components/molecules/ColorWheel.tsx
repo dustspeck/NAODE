@@ -1,3 +1,4 @@
+import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import ColorPicker, {
   Swatches,
@@ -13,9 +14,10 @@ import Label from '../atoms/Label';
 interface ColorWheelProps {
   value: string;
   onChange: (hex: string) => void;
+  hasOpacity?: boolean;
 }
 
-const ColorWheel = ({value, onChange}: ColorWheelProps) => {
+const ColorWheel = ({value, onChange, hasOpacity = true}: ColorWheelProps) => {
   const customSwatches = [
     '#000000',
     '#FFFFFF',
@@ -51,8 +53,16 @@ const ColorWheel = ({value, onChange}: ColorWheelProps) => {
         <HueCircular containerStyle={styles.hueContainer} thumbShape="pill">
           <Panel1 style={styles.panelStyle} />
         </HueCircular>
-        <Label text="Opacity" size={16} />
-        <OpacitySlider adaptSpectrum thumbShape="pill" style={styles.opacitySlider} />
+        {hasOpacity && (
+          <>
+            <Label text="Opacity" size={16} />
+            <OpacitySlider
+              adaptSpectrum
+              thumbShape="pill"
+              style={styles.opacitySlider}
+            />
+          </>
+        )}
         <View
           style={{
             flex: 1,

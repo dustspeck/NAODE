@@ -10,6 +10,8 @@ export interface ImageData {
   type: 'image';
   borderRadius: number;
   opacity: number;
+  stickerBorderWidth: number;
+  stickerBorderColor: string;
 }
 
 export interface TextData {

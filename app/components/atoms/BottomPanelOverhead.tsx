@@ -3,15 +3,21 @@ import {scale} from 'react-native-size-matters';
 
 interface IBottomPanelOverheadProps {
   children: React.ReactNode;
+  top?: number;
+  backgroundColor?: string;
 }
 
-const BottomPanelOverhead = ({children}: IBottomPanelOverheadProps) => {
+const BottomPanelOverhead = ({
+  children,
+  top = -50,
+  backgroundColor = '#111d',
+}: IBottomPanelOverheadProps) => {
   const {width} = useWindowDimensions();
   return (
     <View
       style={{
         position: 'absolute',
-        top: scale(-50),
+        top: scale(top),
         width,
         zIndex: 1000,
         justifyContent: 'center',
@@ -23,7 +29,7 @@ const BottomPanelOverhead = ({children}: IBottomPanelOverheadProps) => {
           flexDirection: 'row',
           alignItems: 'center',
           gap: scale(8),
-          backgroundColor: '#111a',
+          backgroundColor,
           padding: scale(6),
           paddingHorizontal: scale(16),
           borderRadius: scale(10),

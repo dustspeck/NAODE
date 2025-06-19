@@ -27,6 +27,8 @@ export const useEditor = () => {
         type: 'image',
         borderRadius: 0,
         opacity: 1,
+        stickerBorderWidth: 0,
+        stickerBorderColor: '#ffffff',
       };
       setElements(prevElements => [...prevElements, newElement]);
     },

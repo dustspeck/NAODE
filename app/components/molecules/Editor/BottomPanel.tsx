@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   NativeModules,
   ToastAndroid,
+  ActivityIndicator,
 } from 'react-native';
 import {EDIT_CONTROLS_RATIO, FONTS} from '../../../constants/ui';
 import ControlIcon from '../../atoms/ControlIcon';
@@ -47,6 +48,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
   const [isOpacitySelected, setIsOpacitySelected] = useState(false);
   const [isRemoveBackgroundLoading, setIsRemoveBackgroundLoading] =
     useState(false);
+  const [isStickerSelected, setIsStickerSelected] = useState(false);
   useEffect(() => {
     deselectAll();
   }, [selectedElementId]);
@@ -62,6 +64,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     setIsRadiusSelected(false);
     setIsFontSelected(false);
     setIsOpacitySelected(false);
+    setIsStickerSelected(false);
   };
 
   const handleSelectRotation = () => {
@@ -215,6 +218,12 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     }
   };
 
+  const handleBorderWidthChange = (value: number[]) => {
+    if (selectedElementId) {
+      handleUpdateImage(selectedElementId, {stickerBorderWidth: value[0]});
+    }
+  };
+
   const handleColorChange = (hex: string) => {
     if (selectedElementId) {
       handleUpdateText(selectedElementId, {color: hex});
@@ -244,6 +253,24 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
     }
   };
 
+  const handleSelectSticker = () => {
+    deselectAll();
+    setIsStickerSelected(!isStickerSelected);
+  };
+
+  const handleAddBorder = () => {
+    if (selectedElementId && selectedElement && selectedElement.type === 'image') {
+      if (selectedElement.stickerBorderWidth < 3) {
+        handleUpdateImage(selectedElementId, {stickerBorderWidth: 3});
+      } else {
+        handleUpdateImage(selectedElementId, {stickerBorderWidth: 0});
+      }
+      deselectAll();
+      setIsRadiusSelected(true);
+      setIsStickerSelected(false);
+    }
+  };
+
   const handleRemoveBackground = async () => {
     setIsRemoveBackgroundLoading(true);
     if (
@@ -257,10 +284,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
         const imageURI = selectedElement.uri;
         const stickerExists = isStickerURI(imageURI);
         if (stickerExists) {
-          ToastAndroid.show(
-            'Background already removed, please select another image',
-            ToastAndroid.SHORT,
-          );
+          ToastAndroid.show('Sticker already created', ToastAndroid.SHORT);
           return;
         }
         const stickerURI = getStickerURI(imageURI);
@@ -269,22 +293,28 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
           handleUpdateImage(selectedElementId, {
             uri: stickerURI,
           });
-          ToastAndroid.show('Background removed', ToastAndroid.SHORT);
+          ToastAndroid.show('Sticker created', ToastAndroid.SHORT);
         } else {
           ToastAndroid.show(
-            'Error removing background, please try again',
+            'Error creating sticker, please try again',
             ToastAndroid.SHORT,
           );
         }
       } catch (error) {
-        console.error('Error removing background:', error);
+        console.error('Error creating sticker:', error);
         ToastAndroid.show(
-          'Error removing background, please try again',
+          'Error creating sticker, please try again',
           ToastAndroid.SHORT,
         );
       } finally {
         setIsRemoveBackgroundLoading(false);
       }
+    }
+  };
+
+  const handleBorderColorChange = (hex: string) => {
+    if (selectedElementId) {
+      handleUpdateImage(selectedElementId, {stickerBorderColor: hex});
     }
   };
 
@@ -300,6 +330,20 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             <ColorWheel
               value={selectedElement.color}
               onChange={handleColorChange}
+            />
+            <ActionButton
+              text="Done"
+              style={{alignSelf: 'flex-end'}}
+              onPress={() => setIsColorPickerVisible(false)}
+            />
+          </View>
+        )}
+        {selectedElement.type === 'image' && (
+          <View style={{flex: 1}}>
+            <ColorWheel
+              value={selectedElement.stickerBorderColor}
+              onChange={handleBorderColorChange}
+              hasOpacity={false}
             />
             <ActionButton
               text="Done"
@@ -441,6 +485,17 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
               />
             }
           />
+          <ModalWindow
+            isVisible={isRemoveBackgroundLoading}
+            onBackPressed={() => {}}
+            heading="Please wait"
+            content={() => (
+              <View style={{gap: scale(20), flexDirection: 'row'}}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Label text="Creating sticker" />
+              </View>
+            )}
+          />
 
           {isRotationSelected && (
             <BottomPanelOverhead>
@@ -514,26 +569,102 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
             </BottomPanelOverhead>
           )}
           {isRadiusSelected && selectedElement.type === 'image' && (
-            <BottomPanelOverhead>
-              <Label
-                style={{width: scale(30)}}
-                text={`${selectedElement.borderRadius}%`}
-              />
-              <Slider
-                value={selectedElement.borderRadius}
-                onValueChange={handleRadiusChange}
-                minimumValue={0}
-                maximumValue={50}
-                step={1}
-                trackStyle={{
-                  height: scale(2),
-                  width: scale(100),
-                }}
-                thumbTintColor="#fff"
-                minimumTrackTintColor="#fff"
-                maximumTrackTintColor="#333"
-                trackClickable={false}
-              />
+            <BottomPanelOverhead top={-135}>
+              <View
+                style={{
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: scale(10),
+                  marginVertical: scale(10),
+                }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: scale(10),
+                  }}>
+                  <Label text="Radius" style={{fontSize: scale(6)}} />
+                  <Slider
+                    value={selectedElement.borderRadius}
+                    onValueChange={handleRadiusChange}
+                    minimumValue={0}
+                    maximumValue={50}
+                    step={1}
+                    trackStyle={{
+                      height: scale(2),
+                      width: scale(100),
+                    }}
+                    thumbTintColor="#fff"
+                    minimumTrackTintColor="#fff"
+                    maximumTrackTintColor="#666"
+                    trackClickable={false}
+                  />
+                  <Label
+                    style={{fontSize: scale(5), width: scale(25)}}
+                    text={`${selectedElement.borderRadius * 2}%`}
+                  />
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: scale(10),
+                  }}>
+                  <Label text="Width" style={{fontSize: scale(6)}} />
+                  <Slider
+                    value={selectedElement.stickerBorderWidth}
+                    onValueChange={handleBorderWidthChange}
+                    minimumValue={0}
+                    maximumValue={10}
+                    step={1}
+                    trackStyle={{
+                      height: scale(2),
+                      width: scale(100),
+                    }}
+                    thumbTintColor="#fff"
+                    minimumTrackTintColor="#fff"
+                    maximumTrackTintColor="#666"
+                    trackClickable={false}
+                  />
+                  <Label
+                    style={{fontSize: scale(5), width: scale(25)}}
+                    text={`${selectedElement.stickerBorderWidth} pt`}
+                  />
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: scale(10),
+                  }}>
+                  <Label text="Color" style={{fontSize: scale(6)}} />
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: scale(10),
+                      width: scale(100),
+                    }}>
+                    <View
+                      style={{
+                        width: scale(10),
+                        height: scale(10),
+                        borderRadius: scale(10),
+                        backgroundColor: selectedElement.stickerBorderColor,
+                      }}
+                    />
+                    <Label
+                      text={selectedElement.stickerBorderColor}
+                    />
+                  </View>
+                  <ControlIcon
+                    name="eyedrop"
+                    onPress={handleSelectColor}
+                    isSelected={isColorPickerVisible}
+                  />
+                </View>
+              </View>
             </BottomPanelOverhead>
           )}
           {isOpacitySelected && selectedElement.type === 'image' && (
@@ -556,6 +687,26 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                 minimumTrackTintColor="#fff"
                 maximumTrackTintColor="#333"
                 trackClickable={false}
+              />
+            </BottomPanelOverhead>
+          )}
+          {isStickerSelected && selectedElement.type === 'image' && (
+            <BottomPanelOverhead top={-65}>
+              <ControlIcon
+                name="person-outline"
+                onPress={handleRemoveBackground}
+                label="Remove BG"
+                style={{width: scale(40)}}
+              />
+              <ControlIcon
+                name="square-outline"
+                onPress={handleAddBorder}
+                label={
+                  selectedElement.stickerBorderWidth > 0
+                    ? 'Remove Border'
+                    : 'Add Border'
+                }
+                style={{width: scale(40)}}
               />
             </BottomPanelOverhead>
           )}
@@ -601,7 +752,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                   name="square-outline"
                   onPress={handleSelectRadius}
                   isSelected={isRadiusSelected}
-                  label="Radius"
+                  label="Border"
                 />
               </>
             )}
@@ -624,14 +775,10 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                   style={{width: 1, height: '100%', backgroundColor: '#333'}}
                 />
                 <ControlIcon
-                  name={
-                    isRemoveBackgroundLoading
-                      ? 'time-outline'
-                      : 'person-outline'
-                  }
-                  onPress={handleRemoveBackground}
-                  isSelected={isRemoveBackgroundLoading}
-                  label="Cutout"
+                  name="happy-outline"
+                  onPress={handleSelectSticker}
+                  isSelected={isStickerSelected}
+                  label="Sticker"
                 />
               </>
             )}
