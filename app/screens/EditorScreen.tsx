@@ -13,7 +13,7 @@ import BottomPanel from '../components/molecules/Editor/BottomPanel';
 import Editor from '../components/molecules/Editor/Editor';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {captureRef} from 'react-native-view-shot';
-import {AOD_IMAGE_PATH, getRenderedImagePath} from '../constants/paths';
+import {AOD_IMAGE_PATH, GALLERY_IMAGE_PATH, getGalleryImagePath, getRenderedImagePath} from '../constants/paths';
 import {handleError, createError} from '../utils/errorHandling';
 import {measureAsync} from '../utils/performance';
 import {saveImage, ensureDirectoryExists} from '../utils/storage';
@@ -92,11 +92,15 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
     }
   }, [isZoomed]);
 
-  const saveEditorImage = async (id: string, callback?: () => void) => {
+  const saveEditorImage = async (id: string, callback?: (path: string | null) => void, saveToGallery: boolean = false) => {
+    let galleryPath: string | null = null;
     setEditorBorderWidth(0);
     try {
       await measureAsync('saveEditorImage', async () => {
         await ensureDirectoryExists(AOD_IMAGE_PATH);
+        if (saveToGallery) {
+          await ensureDirectoryExists(GALLERY_IMAGE_PATH);
+        }
 
         const highQualityUri = await captureRef(
           ref,
@@ -109,10 +113,13 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
 
         const highQualityPath = getRenderedImagePath(id, 'aod');
         const previewPath = getRenderedImagePath(id, 'aodpreview');
-
+        galleryPath = getGalleryImagePath(id);
+        
         const optimizedHighQualityUri = await createCheckerboardPattern(highQualityUri);
         await saveImage(optimizedHighQualityUri, highQualityPath);
         await saveImage(previewUri, previewPath);
+        if (saveToGallery) await saveImage(highQualityUri, galleryPath);
+        
 
         console.log(
           'Images saved to internal storage:',
@@ -120,7 +127,7 @@ const EditorScreen: React.FC<IEditorScreenProps> = ({route}) => {
           highQualityPath,
         );
 
-        if (callback) callback();
+        if (callback) callback(galleryPath);
       });
     } catch (error) {
       handleError(

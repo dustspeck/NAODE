@@ -21,19 +21,14 @@ import {scale} from 'react-native-size-matters';
 import {updateScreen} from '../../../utils/common';
 import {useScreensStore} from '../../../services/mmkv';
 import {useEditorStore} from '../../../services/mmkv';
-import {
-  GALLERY_IMAGE_PATH,
-  getGalleryImagePath,
-  getRenderedImagePath,
-  USER_IMAGES_PATH,
-} from '../../../constants/paths';
-import {IScreen} from '../../../models/OverlayModel';
+import {USER_IMAGES_PATH} from '../../../constants/paths';
 import {copyImage, ensureDirectoryExists} from '../../../utils/storage';
-import { EditorStarterCue } from '../../atoms/animations/EditorStarterCue';
+import {EditorStarterCue} from '../../atoms/animations/EditorStarterCue';
+import {createError, handleError} from '../../../utils/errorHandling';
 
 interface RightPanelProps {
   animatedSize: Animated.Value;
-  saveImage: (id: string, callback?: () => void) => void;
+  saveImage: (id: string, callback?: (path: string | null) => void, saveToGallery?: boolean) => void;
   screenIndex: number;
 }
 
@@ -56,7 +51,6 @@ const RightPanel: React.FC<RightPanelProps> = ({
   const [isSaveSelected, setIsSaveSelected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedToPath, setSavedToPath] = useState<string | null>(null);
-  
 
   useEffect(() => {
     if (selectedElementId === null) {
@@ -90,32 +84,28 @@ const RightPanel: React.FC<RightPanelProps> = ({
     setIsAddSelected(false);
   };
 
-  const saveImageToGallery = async (screen: IScreen) => {
-    try {
-      await ensureDirectoryExists(GALLERY_IMAGE_PATH);
-      const imagePath = getRenderedImagePath(screen.id, 'aod');
-      const outputPath = getGalleryImagePath(screen.id);
-      await copyImage(imagePath, outputPath);
-      ToastAndroid.show('Image saved to gallery', ToastAndroid.SHORT);
-      console.log('Image saved to gallery', outputPath);
-      setSavedToPath(outputPath);
-      return true;
-    } catch (error) {
-      console.log('Error saving image to gallery', error);
-      ToastAndroid.show('Error saving image to gallery', ToastAndroid.SHORT);
-      return false;
-    }
-  };
-
   const handleSaveImage = () => {
-    setIsSaving(true);
-    setSelectedElementId(null);
-    setStore({elements});
-    setScreens(updateScreen(screens.screens, screenIndex, elements));
-    saveImage(screens.screens[screenIndex].id, () => {
-      saveImageToGallery(screens.screens[screenIndex]);
+    try {
+      setIsSaving(true);
+      setSelectedElementId(null);
+      setStore({elements});
+      setScreens(updateScreen(screens.screens, screenIndex, elements));
+      saveImage(screens.screens[screenIndex].id, path => {
+        setSavedToPath(path);
+        setIsSaving(false);
+        ToastAndroid.show('Image saved to gallery', ToastAndroid.SHORT);
+      }, true);
+    } catch (error) {
       setIsSaving(false);
-    });
+      ToastAndroid.show('Failed to save image to gallery', ToastAndroid.SHORT);
+      handleError(
+        error,
+        'RightPanel:handleSaveImage',
+        createError('Failed to save image to gallery', 'EDITOR_SAVE_ERROR', {
+          id: screens.screens[screenIndex].id,
+        }),
+      );
+    }
   };
 
   const handleSavePress = () => {
