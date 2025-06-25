@@ -6,6 +6,7 @@ export type RootStackParamList = {
     screenIndex: number;
   };
   Shop: undefined;
+  Welcome: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = 

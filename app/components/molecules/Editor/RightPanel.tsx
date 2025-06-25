@@ -12,7 +12,7 @@ import {
   getImageLibraryOptions,
   getUserImageURI,
 } from '../../../constants/ui';
-import {launchImageLibrary} from 'react-native-image-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {useEditorContext} from '../../../context/EditorContext';
 import ControlIcon from '../../atoms/ControlIcon';
 import RightPanelOverhead from '../../atoms/RightPanelOverhead';
@@ -28,7 +28,11 @@ import {createError, handleError} from '../../../utils/errorHandling';
 
 interface RightPanelProps {
   animatedSize: Animated.Value;
-  saveImage: (id: string, callback?: (path: string | null) => void, saveToGallery?: boolean) => void;
+  saveImage: (
+    id: string,
+    callback?: (path: string | null) => void,
+    saveToGallery?: boolean,
+  ) => void;
   screenIndex: number;
 }
 
@@ -51,6 +55,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
   const [isSaveSelected, setIsSaveSelected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedToPath, setSavedToPath] = useState<string | null>(null);
+  const [hasElements, setHasElements] = useState(false);
 
   useEffect(() => {
     if (selectedElementId === null) {
@@ -58,10 +63,35 @@ const RightPanel: React.FC<RightPanelProps> = ({
     }
   }, [selectedElementId]);
 
+  useEffect(() => {
+    setHasElements(elements.length > 0);
+  }, [elements]);
+
   const onAddImage = async () => {
     launchImageLibrary(getImageLibraryOptions(), async response => {
       if (response.didCancel) {
         ToastAndroid.show('No image selected', ToastAndroid.SHORT);
+        return;
+      }
+      if (response.assets && response.assets[0]?.uri) {
+        try {
+          await ensureDirectoryExists(USER_IMAGES_PATH);
+          const newPath = getUserImageURI(response.assets[0].uri);
+          await copyImage(response.assets[0].uri, newPath);
+          handleAddImage(newPath);
+        } catch (error) {
+          console.error('Error copying image:', error);
+          ToastAndroid.show('Error saving image', ToastAndroid.SHORT);
+        }
+      }
+    });
+    setIsAddSelected(false);
+  };
+
+  const onAddImageFromCamera = async () => {
+    launchCamera(getImageLibraryOptions(), async response => {
+      if (response.didCancel) {
+        ToastAndroid.show('No image captured', ToastAndroid.SHORT);
         return;
       }
       if (response.assets && response.assets[0]?.uri) {
@@ -90,11 +120,15 @@ const RightPanel: React.FC<RightPanelProps> = ({
       setSelectedElementId(null);
       setStore({elements});
       setScreens(updateScreen(screens.screens, screenIndex, elements));
-      saveImage(screens.screens[screenIndex].id, path => {
-        setSavedToPath(path);
-        setIsSaving(false);
-        ToastAndroid.show('Image saved to gallery', ToastAndroid.SHORT);
-      }, true);
+      saveImage(
+        screens.screens[screenIndex].id,
+        path => {
+          setSavedToPath(path);
+          setIsSaving(false);
+          ToastAndroid.show('Image saved to gallery', ToastAndroid.SHORT);
+        },
+        true,
+      );
     } catch (error) {
       setIsSaving(false);
       ToastAndroid.show('Failed to save image to gallery', ToastAndroid.SHORT);
@@ -143,16 +177,19 @@ const RightPanel: React.FC<RightPanelProps> = ({
         {isAddSelected && (
           <RightPanelOverhead>
             <Label text="Add new" style={{color: '#eee', fontSize: scale(5)}} />
+            <ControlIcon name="text-outline" onPress={onAddText} label="Text" />
             <View style={{flexDirection: 'row', gap: scale(10)}}>
               <ControlIcon
-                name="text-outline"
-                onPress={onAddText}
-                label="Text"
+                labelStyle={{width: scale(50)}}
+                name="camera-outline"
+                onPress={onAddImageFromCamera}
+                label="Capture"
               />
               <ControlIcon
+                isPremium
                 name="image-outline"
                 onPress={onAddImage}
-                label="Image"
+                label="Gallery"
               />
             </View>
           </RightPanelOverhead>
@@ -188,7 +225,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
             )}
           </RightPanelOverhead>
         )}
-        {elements.length === 0 && !isAddSelected && !isSaveSelected && (
+        {!hasElements && !isAddSelected && !isSaveSelected && (
           <EditorStarterCue />
         )}
         <ControlIcon
@@ -199,6 +236,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
           iconRatio={0.6}
         />
         <ControlIcon
+          isDisabled={!hasElements}
           name="download-outline"
           onPress={handleSavePress}
           isSelected={isSaveSelected}

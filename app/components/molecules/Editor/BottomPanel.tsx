@@ -697,6 +697,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({panValues}) => {
                 onPress={handleRemoveBackground}
                 label="Remove BG"
                 style={{width: scale(40)}}
+                isPremium
               />
               <ControlIcon
                 name="square-outline"
