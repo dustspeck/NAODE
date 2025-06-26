@@ -72,7 +72,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
     ({id}: {id: string}) => {
       return (
         <ModalWindow
-          isVisible={isDeleting}
+          isVisible={isDeleting && selectedElementId === id}
           heading="Delete Element"
           subHeading="This action cannot be undone."
           content={() => (
@@ -154,6 +154,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
                     style={{backgroundColor: '#555', padding: scale(2)}}
                     iconRatio={0.3}
                     onPress={() => {
+                      setSelectedElementId(element.id);
                       setIsDeleting(true);
                     }}
                   />
