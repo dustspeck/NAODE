@@ -18,7 +18,9 @@ import Preview from '../components/molecules/Home/Preview';
 import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
 import {PREVIEW_WIDTH} from '../constants/ui';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import GetPremiumButton from '../components/molecules/Home/GetPremiumButton';
+import {usePurchases} from '../context/PurchasesContext';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -26,6 +28,7 @@ type HomeScreenProps = {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   const {screens, setScreens} = useScreensStore();
+  const {user} = usePurchases();
   const [_store, setStore] = useEditorStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -163,12 +166,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
 
       <View style={styles.fabContainer}>
         <View style={styles.fabSecondaryContainer}>
-          <FabButton
-            isDisabled={isLoading}
-            icon="lock-closed-outline"
-            isPrimary={false}
-            onPress={handleLockPress}
-          />
+          {!user.pro ? (
+            <GetPremiumButton />
+          ) : (
+            <FabButton
+              isDisabled={isLoading}
+              icon="lock-closed-outline"
+              isPrimary={false}
+              onPress={handleLockPress}
+            />
+          )}
           <FabButton
             isDisabled={isLoading}
             icon="settings-outline"

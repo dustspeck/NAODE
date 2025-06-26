@@ -1,4 +1,10 @@
-import {StyleSheet, TouchableOpacity, NativeModules} from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  NativeModules,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import {scale} from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Label from './Label';
@@ -9,6 +15,7 @@ interface IFabButtonProps {
   text?: string;
   onPress: () => void;
   isDisabled?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 const FabButton: React.FC<IFabButtonProps> = ({
@@ -17,6 +24,7 @@ const FabButton: React.FC<IFabButtonProps> = ({
   isPrimary = true,
   onPress,
   isDisabled = false,
+  style,
 }) => {
   const {OverlayModule} = NativeModules;
   return (
@@ -25,6 +33,7 @@ const FabButton: React.FC<IFabButtonProps> = ({
       style={[
         isPrimary ? styles.fabButtonPrimary : styles.fabButtonSecondary,
         {opacity: isDisabled ? 0.5 : 1},
+        style,
       ]}
       onPress={() => {
         OverlayModule.triggerTickHaptic();
