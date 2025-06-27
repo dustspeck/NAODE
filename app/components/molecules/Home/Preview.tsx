@@ -4,19 +4,19 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
-  ViewStyle,
+  Animated,
 } from 'react-native';
 import Label from '../../atoms/Label';
 import {PREVIEW_IMAGE_RATIO} from '../../../constants/ui';
 import {scale} from 'react-native-size-matters';
-import Icon from 'react-native-vector-icons/Ionicons';
 import {useEffect, useRef, useState, useMemo, useCallback} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {useScreensStore} from '../../../services/mmkv';
 import RNFS from 'react-native-fs';
 import {IScreen} from '../../../models/OverlayModel';
 import {getRenderedImagePath} from '../../../constants/paths';
-import { EmptySlate } from '../../atoms/animations/EmptySlate';
+import {EmptySlate} from '../../atoms/animations/EmptySlate';
+import {GlareEffect} from '../../atoms/animations/GlareEffect';
 
 interface IPreview {
   isScrolling: boolean;
@@ -26,6 +26,12 @@ interface IPreview {
   index: number;
   totalScreens: number;
   onPress: () => void;
+}
+
+enum PreviewState {
+  LOADING,
+  PREVIEW_EXISTS,
+  NO_PREVIEW,
 }
 
 const Preview = ({
@@ -41,15 +47,11 @@ const Preview = ({
   const {screens} = useScreensStore();
   const [imageKey, setImageKey] = useState(Date.now());
   const decorationTimer = useRef<NodeJS.Timeout | null>(null);
-  const [decorationVisible, setDecorationVisible] = useState(true);
   const checkPreviewTimer = useRef<NodeJS.Timeout | null>(null);
-
-  enum PreviewState {
-    LOADING,
-    PREVIEW_EXISTS,
-    NO_PREVIEW,
-  }
+  const [showGlare, setShowGlare] = useState(false);
   const [previewState, setPreviewState] = useState(PreviewState.LOADING);
+  const animatedScale = useRef(new Animated.Value(1)).current;
+  const currentScaleRef = useRef(1);
 
   const previewPath = useMemo(
     () => getRenderedImagePath(item.id, 'aodpreview'),
@@ -107,25 +109,34 @@ const Preview = ({
     }, [checkPreviewExists, cleanupTimers]),
   );
 
+  // Handle scale animation when scrolling
   useEffect(() => {
-    if (isScrolling) {
-      setDecorationVisible(true);
+    const targetScale = isScrolling || isSwiping || !isApplied ? 0.96 : 1;
+    const currentScale = currentScaleRef.current;
+    const isScalingDown = targetScale < currentScale;
+    
+    Animated.timing(animatedScale, {
+      toValue: targetScale,
+      duration: isScalingDown ? 100 : 1000,
+      useNativeDriver: true,
+    }).start(() => {
+      currentScaleRef.current = targetScale;
+    });
+  }, [isScrolling, isSwiping, isApplied, animatedScale]);
+
+  // Handle glare effect when preview is applied
+  useEffect(() => {
+    if (
+      isApplied &&
+      !isScrolling &&
+      !isSwiping &&
+      previewState === PreviewState.PREVIEW_EXISTS
+    ) {
+      setShowGlare(true);
+    } else {
+      setShowGlare(false);
     }
-
-    if (decorationTimer.current) {
-      clearTimeout(decorationTimer.current);
-    }
-
-    decorationTimer.current = setTimeout(() => {
-      setDecorationVisible(false);
-    }, 800);
-
-    return () => {
-      if (decorationTimer.current) {
-        clearTimeout(decorationTimer.current);
-      }
-    };
-  }, [isScrolling]);
+  }, [isApplied, isScrolling, previewState]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -144,28 +155,15 @@ const Preview = ({
       {
         height: height * PREVIEW_IMAGE_RATIO,
         width: width * PREVIEW_IMAGE_RATIO,
+        transform: [{scale: animatedScale}],
       },
     ],
-    [height, width],
+    [height, width, animatedScale],
   );
 
   const headerContainerStyle = useMemo(
     () => [styles.headerContainer, {width: width * PREVIEW_IMAGE_RATIO}],
     [width],
-  );
-
-  const statusContainerStyle = useMemo<ViewStyle>(
-    () => ({
-      flexDirection: 'row',
-      alignItems: 'center' as const,
-      gap: scale(2),
-      backgroundColor: !isApplied || isScrolling ? '#333' : '#14452f',
-      paddingHorizontal: scale(5),
-      paddingVertical: scale(1),
-      borderRadius: scale(10),
-      marginRight: scale(8),
-    }),
-    [isApplied, isScrolling],
   );
 
   const renderPreviewContent = useCallback(() => {
@@ -190,25 +188,15 @@ const Preview = ({
           onError={handleImageError}
           resizeMode="contain"
         />
+        <GlareEffect isVisible={showGlare} />
       </View>
     );
-  }, [previewState, previewPath, imageKey, handleImageError]);
+  }, [previewState, previewPath, imageKey, handleImageError, showGlare]);
 
   return (
     <View style={styles.bodyContainer}>
-      <View style={headerContainerStyle}>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-          <View style={statusContainerStyle}>
-            <Icon
-              name={
-                isApplied && !isScrolling ? 'checkmark' : 'ellipsis-horizontal'
-              }
-              size={scale(10)}
-              color={isApplied && !isScrolling ? '#caffbf' : '#eee5'}
-            />
-          </View>
+      <Animated.View style={headerContainerStyle}>
           <Label text={item.name} style={styles.headerText} />
-        </View>
         <View
           style={{
             backgroundColor: '#eee1',
@@ -221,9 +209,11 @@ const Preview = ({
             style={{color: '#eee5', textAlign: 'center', fontSize: 8}}
           />
         </View>
-      </View>
+      </Animated.View>
       <TouchableOpacity activeOpacity={1} onPress={handlePress}>
-        <View style={previewContainerStyle}>{renderPreviewContent()}</View>
+        <Animated.View style={previewContainerStyle}>
+          {renderPreviewContent()}
+        </Animated.View>
       </TouchableOpacity>
     </View>
   );
@@ -256,7 +246,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 12,
-    color: '#ccc',
+    color: '#aaa',
     fontWeight: 'bold',
   },
   previewImage: {

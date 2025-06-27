@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState, useCallback} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,19 +6,18 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Animated,
-  Easing,
+  FlatList,
 } from 'react-native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import PermissionStatus from '../components/molecules/PermissionsStatus';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {scale} from 'react-native-size-matters';
-import {FlatList} from 'react-native';
+import PermissionStatus from '../components/molecules/PermissionsStatus';
 import FabButton from '../components/atoms/FabButton';
 import PageIndicator from '../components/atoms/PageIndicator';
 import Preview from '../components/molecules/Home/Preview';
 import {useEditorStore, useScreensStore} from '../services/mmkv';
 import Header from '../components/molecules/Home/Header';
 import {PREVIEW_WIDTH} from '../constants/ui';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import GetPremiumButton from '../components/molecules/Home/GetPremiumButton';
 import {usePurchases} from '../context/PurchasesContext';
 
@@ -41,34 +40,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
   const timer = useRef<NodeJS.Timeout | null>(null);
   const insets = useSafeAreaInsets();
 
-  const startShakeAnimation = useCallback(() => {
-    Animated.sequence([
-      Animated.timing(shakeAnimation, {
-        toValue: 8,
-        duration: 30,
-        useNativeDriver: true,
-        easing: Easing.linear,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: -8,
-        duration: 30,
-        useNativeDriver: true,
-        easing: Easing.linear,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: 8,
-        duration: 30,
-        useNativeDriver: true,
-        easing: Easing.linear,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: 0,
-        duration: 30,
-        useNativeDriver: true,
-        easing: Easing.linear,
-      }),
-    ]).start();
-  }, [shakeAnimation]);
+  const onPreviewPress = () => {
+    if (isLoading) return;
+    OverlayModule.triggerTickHaptic();
+    navigation.navigate('Editor', {screenIndex: selectedIndex});
+  };
 
   const handleEditPress = () => {
     navigation.navigate('Editor', {screenIndex: selectedIndex});
@@ -142,7 +118,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({navigation}) => {
             isScrolling={isScrolling}
             isSwiping={isSwiping}
             isApplied={isApplied}
-            onPress={startShakeAnimation}
+            onPress={onPreviewPress}
           />
         )}
         initialScrollIndex={screens.selectedIndex}
